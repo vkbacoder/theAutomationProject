@@ -1,0 +1,34 @@
+# AI-Powered Lead Research & Qualification System for RECOV and Jedox
+# Dependencies installed in .venv
+
+# HTTP & Web Scraping
+httpx>=0.28.0
+trafilatura>=2.3.0
+beautifulsoup4>=4.15.0
+lxml>=6.1.0
+
+# Document & PDF Processing
+pymupdf>=1.28.0
+
+# Data Validation & Settings
+pydantic>=2.14.0
+pydantic-settings>=2.16.0
+
+# Deduplication & Entity Matching
+rapidfuzz>=3.14.0
+
+# Data Analysis & Excel / CSV Handling
+pandas>=3.0.0
+openpyxl>=3.1.5
+
+# API & Dashboard UI
+fastapi>=0.143.0
+uvicorn>=0.54.0
+jinja2>=3.1.6
+python-multipart>=0.0.32
+
+# Configuration & Testing
+pyyaml>=6.0.3
+pytest>=9.1.0
+python-dotenv>=1.2.0
+requests>=2.34.0

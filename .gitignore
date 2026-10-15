@@ -1,0 +1,28 @@
+# Environment and Secrets
+.env
+.env.local
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+leads.db
+
+# IDE / Editor Files
+.vscode/
+.idea/

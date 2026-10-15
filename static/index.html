@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Scraper Test - AI Lead Research Platform</title>
+  <meta name="description" content="Web scraping ingestion engine and metadata extractor for RECOV and Jedox lead research system.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Header & Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <span class="logo-title">Lead Research System</span>
+          <span class="logo-subtitle">RECOV &amp; Jedox Intelligence</span>
+        </div>
+      </div>
+      <div class="header-status">
+        <span class="status-indicator online"></span>
+        <span class="status-text" id="engine-status">Engine: Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">Web Scraper Test</h1>
+      <p class="page-description">
+        Ingest, parse, and extract structured business intelligence from public target websites. Validates SSRF security, metadata tags, headings, and clean readable content.
+      </p>
+    </div>
+
+    <!-- Scraper Control Card -->
+    <section class="card input-card">
+      <form id="scraper-form" class="scraper-form" onsubmit="return false;">
+        <div class="input-wrapper">
+          <label for="url-input" class="input-label">Target Website URL</label>
+          <div class="input-group">
+            <span class="input-prefix">🔗</span>
+            <input 
+              type="url" 
+              id="url-input" 
+              class="url-input" 
+              placeholder="https://example.com" 
+              required 
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" id="btn-clear" class="btn btn-secondary" title="Clear input">
+              ✕ Clear
+            </button>
+            <button type="submit" id="btn-scrape" class="btn btn-primary">
+              <span class="btn-spinner" id="btn-spinner"></span>
+              <span class="btn-text" id="btn-text">Scrape Website</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="preset-group">
+          <span class="preset-label">Test Presets:</span>
+          <button type="button" class="preset-chip" data-url="https://example.com">https://example.com</button>
+          <button type="button" class="preset-chip" data-url="https://httpbin.org/html">httpbin.org/html</button>
+          <button type="button" class="preset-chip" data-url="https://www.wikipedia.org">wikipedia.org</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="loading-state hidden">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <div class="loading-info">
+          <h3 id="loading-title">Fetching &amp; Analyzing Webpage...</h3>
+          <p id="loading-subtext">Resolving DNS safely, inspecting security headers, and extracting readable content.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="alert-banner error-banner hidden">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-body">
+        <h4 class="alert-title" id="error-title">Scraping Failed</h4>
+        <p class="alert-message" id="error-message">Unable to fetch target URL.</p>
+      </div>
+      <button type="button" id="btn-dismiss-error" class="alert-close">✕</button>
+    </div>
+
+    <!-- Results Section -->
+    <section id="results-section" class="results-section hidden">
+      <!-- Top Summary Header -->
+      <div class="card result-header-card">
+        <div class="result-header-main">
+          <div class="title-row">
+            <h2 id="res-title" class="result-title">Page Title</h2>
+            <span id="res-status-badge" class="badge badge-success">200 OK</span>
+          </div>
+          <div class="url-row">
+            <span class="url-label">Final URL:</span>
+            <a id="res-final-url" href="#" target="_blank" rel="noopener noreferrer" class="final-url-link">
+              https://example.com
+            </a>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button type="button" id="btn-copy-json" class="btn btn-action" title="Copy raw JSON result">
+            📋 Copy JSON
+          </button>
+          <button type="button" id="btn-download-json" class="btn btn-action" title="Download result as JSON">
+            💾 Download JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">📄</span>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-words">0</span>
+            <span class="stat-label">Word Count</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🔗</span>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-links">0</span>
+            <span class="stat-label">Links Found</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">📑</span>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-headings">0</span>
+            <span class="stat-label">Headings</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🏷️</span>
+          <div class="stat-content">
+            <span class="stat-value" id="stat-meta">0</span>
+            <span class="stat-label">Meta Tags</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Tabs -->
+      <div class="card tabs-card">
+        <div class="tabs-nav" role="tablist">
+          <button class="tab-btn active" id="tab-btn-overview" data-target="tab-overview">Overview</button>
+          <button class="tab-btn" id="tab-btn-text" data-target="tab-text">Extracted Text</button>
+          <button class="tab-btn" id="tab-btn-headings" data-target="tab-headings">Headings</button>
+          <button class="tab-btn" id="tab-btn-links" data-target="tab-links">Links</button>
+          <button class="tab-btn" id="tab-btn-metadata" data-target="tab-metadata">Metadata</button>
+          <button class="tab-btn" id="tab-btn-json" data-target="tab-json">Raw JSON</button>
+        </div>
+
+        <!-- Tab 1: Overview -->
+        <div id="tab-overview" class="tab-content active">
+          <div class="overview-grid">
+            <div class="overview-item">
+              <span class="overview-label">Meta Description</span>
+              <p id="res-description" class="overview-text">No meta description found.</p>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">Canonical URL</span>
+              <p id="res-canonical" class="overview-text">None specified</p>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">Content Type</span>
+              <p id="res-content-type" class="overview-text">text/html</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Extracted Text -->
+        <div id="tab-text" class="tab-content">
+          <div class="text-toolbar">
+            <span class="toolbar-info" id="text-word-stats">0 words</span>
+            <button type="button" id="btn-copy-text" class="btn btn-sm btn-secondary">Copy Text</button>
+          </div>
+          <div class="extracted-text-box">
+            <pre id="res-extracted-text">No text extracted.</pre>
+          </div>
+        </div>
+
+        <!-- Tab 3: Headings -->
+        <div id="tab-headings" class="tab-content">
+          <div class="headings-container">
+            <div class="heading-section">
+              <h3 class="heading-level-title">H1 Tags (<span id="count-h1">0</span>)</h3>
+              <ul id="list-h1" class="heading-list"></ul>
+            </div>
+            <div class="heading-section">
+              <h3 class="heading-level-title">H2 Tags (<span id="count-h2">0</span>)</h3>
+              <ul id="list-h2" class="heading-list"></ul>
+            </div>
+            <div class="heading-section">
+              <h3 class="heading-level-title">H3 Tags (<span id="count-h3">0</span>)</h3>
+              <ul id="list-h3" class="heading-list"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Links -->
+        <div id="tab-links" class="tab-content">
+          <div class="links-toolbar">
+            <input type="text" id="links-search" class="search-input" placeholder="Filter links by URL or anchor text..." />
+            <span class="links-counter" id="links-filtered-count">Showing 0 links</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="links-table">
+              <thead>
+                <tr>
+                  <th style="width: 40%;">Anchor Text</th>
+                  <th style="width: 60%;">Target URL</th>
+                </tr>
+              </thead>
+              <tbody id="links-tbody">
+                <tr><td colspan="2" class="empty-state">No links available</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 5: Metadata -->
+        <div id="tab-metadata" class="tab-content">
+          <div class="table-responsive">
+            <table class="data-table" id="meta-table">
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Key</th>
+                  <th style="width: 65%;">Value</th>
+                </tr>
+              </thead>
+              <tbody id="meta-tbody">
+                <tr><td colspan="2" class="empty-state">No metadata tags found</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 6: Raw JSON -->
+        <div id="tab-json" class="tab-content">
+          <div class="json-box">
+            <pre><code id="res-raw-json">{}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>AI Lead Research &amp; Qualification System • Ingestion Subsystem v1.0.0</p>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
