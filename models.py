@@ -182,3 +182,106 @@ class QualifyLeadRequest(BaseModel):
     reasoning: Optional[str] = None
     criteria_matched: List[str] = Field(default_factory=list)
     is_ai_generated: bool = False
+
+
+# -------------------------------------------------------------
+# Scrapy Crawl Job Models
+# -------------------------------------------------------------
+
+class CrawlJobStatus(str, Enum):
+    """Execution status of a recursive crawl job."""
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+
+class CrawlPageStatus(str, Enum):
+    """Result status of an individual crawled page."""
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
+
+
+class CrawlJobMetrics(BaseModel):
+    """Detailed performance and extraction metrics for a recursive crawl job."""
+    requests_attempted: int = Field(default=0, description="Total HTTP requests attempted by crawler")
+    responses_downloaded: int = Field(default=0, description="Successfully downloaded HTTP responses")
+    unique_pages_saved: int = Field(default=0, description="Unique pages persisted in database")
+    useful_pages: int = Field(default=0, description="Pages with non-empty extracted text")
+    empty_or_thin_pages: int = Field(default=0, description="Pages with empty or thin content")
+    duplicate_requests_filtered: int = Field(default=0, description="Duplicate requests filtered by dupefilter")
+    failed_requests: int = Field(default=0, description="Failed requests, timeouts, and HTTP errors")
+    total_response_bytes: Optional[int] = Field(default=0, description="Total downloaded response wire bytes")
+    total_decompressed_bytes: Optional[int] = Field(default=0, description="Total decompressed response bytes")
+    crawl_duration_sec: Optional[float] = Field(default=0.0, description="Total crawl duration in seconds")
+    evidence_records_created: int = Field(default=0, description="Evidence records created and linked")
+    final_outcome: str = Field(default="COMPLETED", description="Final job status: COMPLETED, CANCELLED, or FAILED")
+    stop_reason: Optional[str] = Field(default=None, description="Engine stop reason (e.g. finished, max_pages_reached, cancelled)")
+
+
+class CrawlJob(BaseModel):
+    """Record of a recursive Scrapy crawl job."""
+    id: Optional[int] = None
+    seed_url: str
+    allowed_domains: List[str] = Field(default_factory=list)
+    workflow: WorkflowType = WorkflowType.GENERAL
+    company_id: Optional[int] = None
+    company_name: Optional[str] = None
+    status: CrawlJobStatus = CrawlJobStatus.PENDING
+    cancellation_requested: bool = False
+    max_depth: int = 2
+    max_pages: int = 100
+    max_pages_per_domain: int = 30
+    pages_crawled: int = 0
+    pages_failed: int = 0
+    discovered_urls_count: int = 0
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    started_at: Optional[str] = None
+    finished_at: Optional[str] = None
+    error_message: Optional[str] = None
+    worker_pid: Optional[int] = None
+    metrics_json: Optional[str] = None
+    metrics: Optional[CrawlJobMetrics] = None
+
+
+class CrawlPage(BaseModel):
+    """A single page crawled and extracted during a crawl job."""
+    id: Optional[int] = None
+    job_id: int
+    original_url: str
+    final_url: Optional[str] = None
+    http_status: Optional[int] = None
+    depth: int = 0
+    discovery_source_url: Optional[str] = None
+    title: Optional[str] = None
+    extracted_text: Optional[str] = None
+    headings_json: Optional[Dict[str, List[str]]] = None
+    metadata_json: Optional[Dict[str, str]] = None
+    links_count: int = 0
+    word_count: int = 0
+    content_hash: Optional[str] = None
+    status: CrawlPageStatus = CrawlPageStatus.SUCCESS
+    error_message: Optional[str] = None
+    evidence_id: Optional[int] = None
+    retrieved_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+
+
+class CreateCrawlJobRequest(BaseModel):
+    """Request payload to initiate a recursive crawl job."""
+    url: str = Field(..., description="Seed URL for recursive crawling")
+    workflow: WorkflowType = Field(
+        default=WorkflowType.GENERAL,
+        description="Workflow context: 'RECOV', 'JEDOX', or 'GENERAL'"
+    )
+    company_name: Optional[str] = None
+    max_depth: Optional[int] = Field(default=2, ge=0, le=10)
+    max_pages: Optional[int] = Field(default=100, ge=1, le=500)
+    max_pages_per_domain: Optional[int] = Field(default=30, ge=1, le=200)
+    allowed_domains: Optional[List[str]] = None
+

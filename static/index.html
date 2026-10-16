@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Scraper Test - AI Lead Research Platform</title>
-  <meta name="description" content="Web scraping ingestion engine and metadata extractor for RECOV and Jedox lead research system.">
+  <title>AI Web Research &amp; Data Extraction - Unified Platform</title>
+  <meta name="description" content="Unified web research and data extraction platform combining single-page extraction and recursive Scrapy crawling.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -17,12 +17,12 @@
       <div class="logo-group">
         <div class="logo-icon">⚡</div>
         <div class="logo-text">
-          <span class="logo-title">Lead Research System</span>
-          <span class="logo-subtitle">RECOV &amp; Jedox Intelligence</span>
+          <span class="logo-title">AI Web Research &amp; Data Extraction</span>
+          <span class="logo-subtitle">Unified Single-Page &amp; Recursive Intelligence Engine • Web Scraper Test Suite</span>
         </div>
       </div>
       <div class="header-status">
-        <span class="status-indicator online"></span>
+        <span class="status-indicator online" id="status-dot"></span>
         <span class="status-text" id="engine-status">Engine: Ready</span>
       </div>
     </div>
@@ -30,239 +30,387 @@
 
   <!-- Main Container -->
   <main class="main-content">
+    <!-- Page Intro Header -->
     <div class="page-header">
-      <h1 class="page-title">Web Scraper Test</h1>
+      <h1 class="page-title">AI Web Research &amp; Data Extraction</h1>
       <p class="page-description">
-        Ingest, parse, and extract structured business intelligence from public target websites. Validates SSRF security, metadata tags, headings, and clean readable content.
+        Autonomous ingestion, recursive website crawling, and structured data extraction. Enforces connection-time SSRF security, strict TLS certificate validation, duplicate filtering, and verifiable source evidence linking.
       </p>
     </div>
 
-    <!-- Scraper Control Card -->
-    <section class="card input-card">
-      <form id="scraper-form" class="scraper-form" onsubmit="return false;">
+    <!-- Unified Research Control Card -->
+    <section class="card input-card" id="unified-control-card">
+      <form id="unified-research-form" class="scraper-form" onsubmit="return false;">
+        <!-- Mode Selector -->
+        <div class="form-mode-container">
+          <span class="mode-label">Research Mode:</span>
+          <div class="segmented-control" role="radiogroup" aria-label="Research Mode">
+            <button type="button" class="segment-btn active" id="mode-single" data-mode="single" role="radio" aria-checked="true">
+              ⚡ Current Page (Scrape Website)
+            </button>
+            <button type="button" class="segment-btn" id="mode-crawl" data-mode="crawl" role="radio" aria-checked="false">
+              🕷️ Website Crawl (Recursive)
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary URL Input Row -->
         <div class="input-wrapper">
-          <label for="url-input" class="input-label">Target Website URL</label>
+          <label for="url-input" class="input-label" id="url-input-label">Target Website URL</label>
           <div class="input-group">
-            <span class="input-prefix">🔗</span>
+            <span class="input-prefix" id="url-icon">🔗</span>
             <input 
               type="url" 
               id="url-input" 
               class="url-input" 
-              placeholder="https://example.com" 
+              placeholder="https://cooperatives.gov.in/" 
               required 
               autocomplete="off"
               spellcheck="false"
             />
-            <button type="button" id="btn-clear" class="btn btn-secondary" title="Clear input">
+            <button type="button" id="btn-clear-url" class="btn btn-secondary" title="Clear input">
               ✕ Clear
             </button>
-            <button type="submit" id="btn-scrape" class="btn btn-primary">
-              <span class="btn-spinner" id="btn-spinner"></span>
-              <span class="btn-text" id="btn-text">Scrape Website</span>
+            <button type="submit" id="btn-start-research" class="btn btn-primary">
+              <span class="btn-spinner" id="research-spinner"></span>
+              <span class="btn-text" id="research-btn-text">🚀 Start Research</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Recursive Crawl Parameters (Shown only when Website Crawl mode is active) -->
+        <div id="crawl-params-panel" class="crawl-form-grid hidden">
+          <div class="form-field-group">
+            <label for="crawl-workflow">Workflow Context</label>
+            <select id="crawl-workflow" class="form-select">
+              <option value="GENERAL" selected>GENERAL (Business Intelligence)</option>
+              <option value="RECOV">RECOV (Credit &amp; Debt Recovery)</option>
+              <option value="JEDOX">JEDOX (FP&amp;A &amp; Enterprise)</option>
+            </select>
+          </div>
+          <div class="form-field-group">
+            <label for="crawl-company-name">Company / Entity Name (Optional)</label>
+            <input type="text" id="crawl-company-name" class="form-text-input" placeholder="e.g. Ministry of Cooperation" />
+          </div>
+          <div class="form-field-group">
+            <label for="crawl-max-depth">Max Depth</label>
+            <input type="number" id="crawl-max-depth" class="form-number-input" value="2" min="1" max="5" />
+          </div>
+          <div class="form-field-group">
+            <label for="crawl-max-pages">Max Pages Total</label>
+            <input type="number" id="crawl-max-pages" class="form-number-input" value="20" min="1" max="300" />
+          </div>
+          <div class="form-field-group">
+            <label for="crawl-max-domain">Max Pages / Domain</label>
+            <input type="number" id="crawl-max-domain" class="form-number-input" value="20" min="1" max="100" />
           </div>
         </div>
 
         <!-- Quick Presets -->
         <div class="preset-group">
           <span class="preset-label">Test Presets:</span>
+          <button type="button" class="preset-chip" data-url="https://cooperatives.gov.in/">https://cooperatives.gov.in/ (NCD)</button>
+          <button type="button" class="preset-chip" data-url="https://quotes.toscrape.com/">https://quotes.toscrape.com/ (Sandbox)</button>
           <button type="button" class="preset-chip" data-url="https://example.com">https://example.com</button>
-          <button type="button" class="preset-chip" data-url="https://httpbin.org/html">httpbin.org/html</button>
-          <button type="button" class="preset-chip" data-url="https://www.wikipedia.org">wikipedia.org</button>
         </div>
       </form>
     </section>
-
-    <!-- Loading State -->
-    <div id="loading-state" class="loading-state hidden">
-      <div class="loading-card">
-        <div class="spinner"></div>
-        <div class="loading-info">
-          <h3 id="loading-title">Fetching &amp; Analyzing Webpage...</h3>
-          <p id="loading-subtext">Resolving DNS safely, inspecting security headers, and extracting readable content.</p>
-        </div>
-      </div>
-    </div>
 
     <!-- Error Banner -->
     <div id="error-banner" class="alert-banner error-banner hidden">
       <div class="alert-icon">⚠️</div>
       <div class="alert-body">
-        <h4 class="alert-title" id="error-title">Scraping Failed</h4>
-        <p class="alert-message" id="error-message">Unable to fetch target URL.</p>
+        <h4 class="alert-title" id="error-title">Research Action Failed</h4>
+        <p class="alert-message" id="error-message">Unable to fetch or process target destination.</p>
       </div>
       <button type="button" id="btn-dismiss-error" class="alert-close">✕</button>
     </div>
 
-    <!-- Results Section -->
-    <section id="results-section" class="results-section hidden">
-      <!-- Top Summary Header -->
-      <div class="card result-header-card">
-        <div class="result-header-main">
-          <div class="title-row">
-            <h2 id="res-title" class="result-title">Page Title</h2>
-            <span id="res-status-badge" class="badge badge-success">200 OK</span>
-          </div>
-          <div class="url-row">
-            <span class="url-label">Final URL:</span>
-            <a id="res-final-url" href="#" target="_blank" rel="noopener noreferrer" class="final-url-link">
-              https://example.com
-            </a>
-          </div>
+    <!-- Active Job / Live Monitor Card -->
+    <section id="live-job-card" class="crawl-job-card hidden">
+      <div class="crawl-job-header">
+        <div class="crawl-job-title-group">
+          <span class="crawl-job-title" id="job-title-text">Crawl Job #<span id="job-display-id">-</span></span>
+          <span id="job-status-badge" class="badge badge-pending">PENDING</span>
         </div>
-
-        <div class="result-actions">
-          <button type="button" id="btn-copy-json" class="btn btn-action" title="Copy raw JSON result">
-            📋 Copy JSON
-          </button>
-          <button type="button" id="btn-download-json" class="btn btn-action" title="Download result as JSON">
-            💾 Download JSON
-          </button>
+        <div class="crawl-job-actions">
+          <button type="button" id="btn-cancel-crawl" class="btn btn-sm btn-danger-outline">✕ Cancel Crawl</button>
+          <button type="button" id="btn-retry-crawl" class="btn btn-sm btn-secondary hidden">🔁 Retry Failed</button>
+          <button type="button" id="btn-refresh-job" class="btn btn-sm btn-secondary">↻ Refresh Status</button>
         </div>
       </div>
 
-      <!-- Quick Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-icon">📄</span>
-          <div class="stat-content">
-            <span class="stat-value" id="stat-words">0</span>
-            <span class="stat-label">Word Count</span>
-          </div>
+      <!-- Live Progress Bar -->
+      <div class="progress-bar-container" id="crawl-progress-wrapper">
+        <div class="progress-bar-fill" id="crawl-progress-fill" style="width: 0%;"></div>
+        <span class="progress-text" id="crawl-progress-text">0 / 20 Pages Crawled</span>
+      </div>
+
+      <!-- High-Level Counter Boxes -->
+      <div class="crawl-stats-row">
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="job-pages-crawled">0</span>
+          <span class="crawl-stat-label">Pages Crawled</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-icon">🔗</span>
-          <div class="stat-content">
-            <span class="stat-value" id="stat-links">0</span>
-            <span class="stat-label">Links Found</span>
-          </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="job-discovered-urls">0</span>
+          <span class="crawl-stat-label">Discovered URLs</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-icon">📑</span>
-          <div class="stat-content">
-            <span class="stat-value" id="stat-headings">0</span>
-            <span class="stat-label">Headings</span>
-          </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="job-pages-failed">0</span>
+          <span class="crawl-stat-label">Failed Requests</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-icon">🏷️</span>
-          <div class="stat-content">
-            <span class="stat-value" id="stat-meta">0</span>
-            <span class="stat-label">Meta Tags</span>
-          </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="job-max-depth">2</span>
+          <span class="crawl-stat-label">Max Depth</span>
         </div>
       </div>
 
-      <!-- Content Tabs -->
-      <div class="card tabs-card">
-        <div class="tabs-nav" role="tablist">
-          <button class="tab-btn active" id="tab-btn-overview" data-target="tab-overview">Overview</button>
-          <button class="tab-btn" id="tab-btn-text" data-target="tab-text">Extracted Text</button>
-          <button class="tab-btn" id="tab-btn-headings" data-target="tab-headings">Headings</button>
-          <button class="tab-btn" id="tab-btn-links" data-target="tab-links">Links</button>
-          <button class="tab-btn" id="tab-btn-metadata" data-target="tab-metadata">Metadata</button>
-          <button class="tab-btn" id="tab-btn-json" data-target="tab-json">Raw JSON</button>
+      <!-- Performance & Extraction Metrics Summary (All 11 Metrics) -->
+      <div class="metrics-summary-header">
+        <h4 class="metrics-section-title">📊 Baseline Performance &amp; Extraction Metrics</h4>
+        <span class="metrics-badge" id="metrics-outcome-badge">Outcome: Active</span>
+      </div>
+      <div class="crawl-stats-row metrics-grid-11">
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-requests-attempted">-</span>
+          <span class="crawl-stat-label">Requests Sent</span>
         </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-responses-downloaded">-</span>
+          <span class="crawl-stat-label">Responses Rcvd</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-unique-saved">-</span>
+          <span class="crawl-stat-label">Unique Saved</span>
+        </div>
+        <div class="crawl-stat-box highlight-success">
+          <span class="crawl-stat-value" id="metric-useful-pages">-</span>
+          <span class="crawl-stat-label">Useful Pages</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-thin-pages">-</span>
+          <span class="crawl-stat-label">Empty / Thin</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-dupes-filtered">-</span>
+          <span class="crawl-stat-label">Dupes Filtered</span>
+        </div>
+        <div class="crawl-stat-box highlight-danger">
+          <span class="crawl-stat-value" id="metric-failed-requests">-</span>
+          <span class="crawl-stat-label">Failed Requests</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-download-bytes">-</span>
+          <span class="crawl-stat-label">Bytes Transferred</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-duration">-</span>
+          <span class="crawl-stat-label">Crawl Duration</span>
+        </div>
+        <div class="crawl-stat-box highlight-primary">
+          <span class="crawl-stat-value" id="metric-evidence-linked">-</span>
+          <span class="crawl-stat-label">Evidence Linked</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-stop-reason" style="font-size: 0.95rem; text-transform: uppercase;">-</span>
+          <span class="crawl-stat-label">Stop Reason</span>
+        </div>
+      </div>
+    </section>
 
-        <!-- Tab 1: Overview -->
-        <div id="tab-overview" class="tab-content active">
-          <div class="overview-grid">
-            <div class="overview-item">
-              <span class="overview-label">Meta Description</span>
-              <p id="res-description" class="overview-text">No meta description found.</p>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">Canonical URL</span>
-              <p id="res-canonical" class="overview-text">None specified</p>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">Content Type</span>
-              <p id="res-content-type" class="overview-text">text/html</p>
-            </div>
+    <!-- Cooperative Intelligence Callout -->
+    <section id="coop-intelligence-section" class="card coop-callout-card hidden">
+      <div class="coop-callout-header">
+        <div class="coop-callout-title-group">
+          <span class="coop-icon">🏛️</span>
+          <div>
+            <h3 class="coop-callout-title">Cooperative Data Findings &amp; Entity Extraction Status</h3>
+            <span class="coop-stage-badge">Status: Unstructured Text &amp; Directory Links Active</span>
+          </div>
+        </div>
+        <span class="coop-notice-tag">Notice: Entity Normalization in Progress</span>
+      </div>
+      <p class="coop-callout-desc">
+        The current crawler and scraper engines capture full-page textual content, tabular HTML data, and discovered links. Automated normalization into discrete individual cooperative registry records (e.g. member rosters, registration certificates) is currently in development. Discovered datasets, state coverage tables, and directories from the current session are indexed below:
+      </p>
+      <div id="coop-detected-chips" class="coop-chips-container">
+        <!-- Dynamically populated based on extracted data -->
+      </div>
+    </section>
+
+    <!-- Full Results Workspace -->
+    <section id="workspace-section" class="results-section hidden">
+      <div class="card workspace-card">
+        <!-- Workspace Header & Filters -->
+        <div class="workspace-header">
+          <div class="workspace-title-group">
+            <h2 class="workspace-title">Extracted Workspace Pages</h2>
+            <span class="links-counter" id="workspace-results-count">Showing 0 pages</span>
+          </div>
+          <div class="workspace-actions">
+            <button type="button" id="btn-export-csv" class="btn btn-action" title="Export current results as CSV">
+              📥 Export CSV
+            </button>
+            <button type="button" id="btn-export-json" class="btn btn-action" title="Export current results as JSON">
+              💾 Export JSON
+            </button>
           </div>
         </div>
 
-        <!-- Tab 2: Extracted Text -->
-        <div id="tab-text" class="tab-content">
+        <!-- Search & Filter Controls -->
+        <div class="workspace-toolbar">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="workspace-search-input" class="search-input" placeholder="Filter by Title, URL, or Text Content..." />
+          </div>
+          <div class="filter-controls">
+            <select id="workspace-status-filter" class="form-select filter-select">
+              <option value="ALL">All Statuses</option>
+              <option value="SUCCESS">Success Only (200)</option>
+              <option value="FAILED">Failed / Errors Only</option>
+            </select>
+            <select id="workspace-sort-select" class="form-select filter-select">
+              <option value="DEFAULT">Order: Default</option>
+              <option value="WORDS_DESC">Word Count: High → Low</option>
+              <option value="DEPTH_ASC">Depth: Low → High</option>
+              <option value="TITLE_ASC">Title: A → Z</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="table-responsive">
+          <table class="data-table" id="workspace-table">
+            <thead>
+              <tr>
+                <th style="width: 7%;">Depth</th>
+                <th style="width: 38%;">Page Title &amp; Source URL</th>
+                <th style="width: 10%;">HTTP Status</th>
+                <th style="width: 10%;">Extraction</th>
+                <th style="width: 10%;">Word Count</th>
+                <th style="width: 10%;">Evidence ID</th>
+                <th style="width: 15%; text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="workspace-tbody">
+              <tr>
+                <td colspan="7" class="empty-state">No research data available yet. Start research above to populate this workspace.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Record Inspection Slide-Over Modal / Drawer -->
+  <div id="record-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-page-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="badge" id="modal-depth-badge">d:0</span>
+          <h3 id="modal-page-title" class="modal-title">Record Inspection</h3>
+          <span class="badge badge-success" id="modal-status-badge">SUCCESS</span>
+        </div>
+        <button type="button" id="btn-close-modal" class="modal-close-btn" title="Close modal (Esc)">✕</button>
+      </div>
+
+      <div class="modal-meta-bar">
+        <span class="meta-label">Source URL:</span>
+        <a id="modal-page-url" href="#" target="_blank" rel="noopener noreferrer" class="final-url-link">https://example.com</a>
+        <span class="meta-separator">•</span>
+        <span class="meta-label">HTTP:</span>
+        <span id="modal-http-status" class="meta-val">200</span>
+        <span class="meta-separator">•</span>
+        <span class="meta-label">Words:</span>
+        <span id="modal-word-count" class="meta-val">0</span>
+        <span class="meta-separator">•</span>
+        <span class="meta-label">Evidence:</span>
+        <span id="modal-evidence-tag" class="meta-val">None</span>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="modal-tabs-nav" role="tablist">
+        <button type="button" class="modal-tab-btn active" data-target="modtab-text">📄 Extracted Text</button>
+        <button type="button" class="modal-tab-btn" data-target="modtab-headings">📑 Headings</button>
+        <button type="button" class="modal-tab-btn" data-target="modtab-meta">🏷️ Metadata &amp; Headers</button>
+        <button type="button" class="modal-tab-btn" data-target="modtab-evidence">🛡️ Linked Evidence Record</button>
+        <button type="button" class="modal-tab-btn" data-target="modtab-json">💻 Raw JSON Data</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tab 1: Extracted Text -->
+        <div id="modtab-text" class="modal-tab-content active">
           <div class="text-toolbar">
-            <span class="toolbar-info" id="text-word-stats">0 words</span>
-            <button type="button" id="btn-copy-text" class="btn btn-sm btn-secondary">Copy Text</button>
+            <span class="toolbar-info" id="modal-text-stats">0 words</span>
+            <button type="button" id="btn-modal-copy-text" class="btn btn-sm btn-secondary">📋 Copy Full Text</button>
           </div>
           <div class="extracted-text-box">
-            <pre id="res-extracted-text">No text extracted.</pre>
+            <pre id="modal-text-body">No text content available.</pre>
           </div>
         </div>
 
-        <!-- Tab 3: Headings -->
-        <div id="tab-headings" class="tab-content">
+        <!-- Tab 2: Headings -->
+        <div id="modtab-headings" class="modal-tab-content">
           <div class="headings-container">
             <div class="heading-section">
-              <h3 class="heading-level-title">H1 Tags (<span id="count-h1">0</span>)</h3>
-              <ul id="list-h1" class="heading-list"></ul>
+              <h4 class="heading-level-title">H1 Tags (<span id="modal-count-h1">0</span>)</h4>
+              <ul id="modal-list-h1" class="heading-list"></ul>
             </div>
             <div class="heading-section">
-              <h3 class="heading-level-title">H2 Tags (<span id="count-h2">0</span>)</h3>
-              <ul id="list-h2" class="heading-list"></ul>
+              <h4 class="heading-level-title">H2 Tags (<span id="modal-count-h2">0</span>)</h4>
+              <ul id="modal-list-h2" class="heading-list"></ul>
             </div>
             <div class="heading-section">
-              <h3 class="heading-level-title">H3 Tags (<span id="count-h3">0</span>)</h3>
-              <ul id="list-h3" class="heading-list"></ul>
+              <h4 class="heading-level-title">H3 Tags (<span id="modal-count-h3">0</span>)</h4>
+              <ul id="modal-list-h3" class="heading-list"></ul>
             </div>
           </div>
         </div>
 
-        <!-- Tab 4: Links -->
-        <div id="tab-links" class="tab-content">
-          <div class="links-toolbar">
-            <input type="text" id="links-search" class="search-input" placeholder="Filter links by URL or anchor text..." />
-            <span class="links-counter" id="links-filtered-count">Showing 0 links</span>
-          </div>
+        <!-- Tab 3: Metadata -->
+        <div id="modtab-meta" class="modal-tab-content">
           <div class="table-responsive">
-            <table class="data-table" id="links-table">
-              <thead>
-                <tr>
-                  <th style="width: 40%;">Anchor Text</th>
-                  <th style="width: 60%;">Target URL</th>
-                </tr>
-              </thead>
-              <tbody id="links-tbody">
-                <tr><td colspan="2" class="empty-state">No links available</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tab 5: Metadata -->
-        <div id="tab-metadata" class="tab-content">
-          <div class="table-responsive">
-            <table class="data-table" id="meta-table">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th style="width: 35%;">Key</th>
                   <th style="width: 65%;">Value</th>
                 </tr>
               </thead>
-              <tbody id="meta-tbody">
-                <tr><td colspan="2" class="empty-state">No metadata tags found</td></tr>
+              <tbody id="modal-meta-tbody">
+                <tr><td colspan="2" class="empty-state">No metadata found.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Tab 6: Raw JSON -->
-        <div id="tab-json" class="tab-content">
+        <!-- Tab 4: Linked Evidence Record -->
+        <div id="modtab-evidence" class="modal-tab-content">
+          <div id="modal-evidence-details">
+            <p class="empty-state">No evidence linked to this page.</p>
+          </div>
+        </div>
+
+        <!-- Tab 5: Raw JSON -->
+        <div id="modtab-json" class="modal-tab-content">
+          <div class="text-toolbar">
+            <span class="toolbar-info">Structured Record Object</span>
+            <button type="button" id="btn-modal-copy-json" class="btn btn-sm btn-secondary">📋 Copy JSON</button>
+          </div>
           <div class="json-box">
-            <pre><code id="res-raw-json">{}</code></pre>
+            <pre><code id="modal-json-body">{}</code></pre>
           </div>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="app-footer">
     <div class="footer-container">
-      <p>AI Lead Research &amp; Qualification System • Ingestion Subsystem v1.0.0</p>
+      <p>AI Lead Research &amp; Qualification System • Unified Web Intelligence Platform v1.2.0</p>
     </div>
   </footer>
 

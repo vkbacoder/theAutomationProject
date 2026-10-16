@@ -386,7 +386,7 @@ def test_pipeline_heuristic_signals_jedox(temp_db):
 def test_api_lead_ingest_and_get():
     """Test POST /api/leads/ingest and GET /api/leads/{id}."""
     import uuid
-    uid = uuid.uuid4().hex[:6]
+    uid = uuid.uuid4().hex[:12]
     test_url = f"https://client-{uid}.com"
 
     mock_response = ScrapeResponse(
@@ -395,7 +395,7 @@ def test_api_lead_ingest_and_get():
         final_url=test_url,
         status_code=200,
         content_type="text/html",
-        title=f"Acme Global Finance {uid}",
+        title=f"UniqueCorp {uid}",
         description="Global financial planning services.",
         canonical_url=test_url,
         headings=HeadingsGroup(),
@@ -411,12 +411,12 @@ def test_api_lead_ingest_and_get():
             json={
                 "url": test_url,
                 "workflow": "JEDOX",
-                "company_name": f"Acme Global {uid}",
+                "company_name": f"UniqueCorp {uid}",
             },
         )
         assert ingest_res.status_code == 200
         data = ingest_res.json()
-        assert data["company"]["company_name"] == f"Acme Global {uid}"
+        assert data["company"]["company_name"] == f"UniqueCorp {uid}"
         assert data["company"]["workflow"] == "JEDOX"
         company_id = data["company"]["id"]
 
