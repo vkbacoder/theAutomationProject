@@ -26,6 +26,14 @@ ALLOWED_CONTENT_PREFIXES = (
     "text/html",
     "application/xhtml+xml",
     "text/plain",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.",
+    "application/vnd.ms-excel",
+    "application/msword",
+    "application/vnd.ms-powerpoint",
+    "text/csv",
+    "image/",
+    "application/octet-stream",
 )
 
 

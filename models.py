@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class WorkflowType(str, Enum):
@@ -49,19 +49,138 @@ class FitLevel(str, Enum):
 # Component Models
 # -------------------------------------------------------------
 
+class RoleCategory(str, Enum):
+    """Broad professional role categories for decision makers."""
+    TECHNOLOGY_IT = "TECHNOLOGY_IT"
+    FINANCE_BUSINESS = "FINANCE_BUSINESS"
+    EXECUTIVE = "EXECUTIVE"
+    OPERATIONS = "OPERATIONS"
+    OTHER = "OTHER"
+
+
+class ContactType(str, Enum):
+    """Types of extracted public professional contacts."""
+    EMAIL = "EMAIL"
+    PHONE = "PHONE"
+    OFFICE_PHONE = "OFFICE_PHONE"
+    LINKEDIN = "LINKEDIN"
+    PROFILE_URL = "PROFILE_URL"
+    OTHER = "OTHER"
+
+
+class ContactVerificationStatus(str, Enum):
+    """Verification classification for public contacts."""
+    VERIFIED_PUBLIC = "VERIFIED_PUBLIC"
+    PARTIALLY_VERIFIED = "PARTIALLY_VERIFIED"
+    UNVERIFIED = "UNVERIFIED"
+
+
+class ClaimType(str, Enum):
+    """Types of verifiable business claims."""
+    CUSTOMER_RELATIONSHIP = "CUSTOMER_RELATIONSHIP"
+    RELATIONSHIP = "CUSTOMER_RELATIONSHIP"
+    PRODUCT_USAGE = "PRODUCT_USAGE"
+    PARTNERSHIP = "PARTNERSHIP"
+    DECISION_MAKER = "DECISION_MAKER"
+    CONTACT_INFO = "CONTACT_INFO"
+    CONTACT = "CONTACT_INFO"
+    VENDOR_SUPPLIER = "VENDOR_SUPPLIER"
+    TESTIMONIAL = "TESTIMONIAL"
+    OTHER = "OTHER"
+
+
+class CandidateCategory(str, Enum):
+    """Quality-control categorization of extracted candidate entities."""
+    NAMED_COMPANY = "NAMED_COMPANY"
+    ANONYMOUS_CLIENT_DESCRIPTION = "ANONYMOUS_CLIENT_DESCRIPTION"
+    PERSON = "PERSON"
+    PRODUCT_OR_TECHNOLOGY = "PRODUCT_OR_TECHNOLOGY"
+    PROJECT_TITLE = "PROJECT_TITLE"
+    OTHER_ENTITY = "OTHER_ENTITY"
+
+
+class DocumentFormat(str, Enum):
+    """Supported document and media formats."""
+    HTML = "HTML"
+    PDF = "PDF"
+    XLSX = "XLSX"
+    XLS = "XLS"
+    CSV = "CSV"
+    DOCX = "DOCX"
+    DOC = "DOC"
+    PPTX = "PPTX"
+    PPT = "PPT"
+    PNG = "PNG"
+    JPG = "JPG"
+    JPEG = "JPEG"
+    WEBP = "WEBP"
+    TIFF = "TIFF"
+    OTHER = "OTHER"
+
+
+class DownloadStatus(str, Enum):
+    """Document download status."""
+    PENDING = "PENDING"
+    DOWNLOADED = "DOWNLOADED"
+    SKIPPED_SIZE = "SKIPPED_SIZE"
+    SKIPPED_DOMAIN = "SKIPPED_DOMAIN"
+    FAILED = "FAILED"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
+class ExtractionStatus(str, Enum):
+    """Document extraction and OCR status."""
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    PARTIAL = "PARTIAL"
+    FAILED = "FAILED"
+    ENCRYPTED = "ENCRYPTED"
+    OCR_FAILED = "OCR_FAILED"
+    OCR_UNAVAILABLE = "OCR_UNAVAILABLE"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
 class DecisionMaker(BaseModel):
     """Contact information for a corporate decision-maker."""
     id: Optional[int] = None
+    job_id: Optional[int] = None
     company_id: Optional[int] = None
-    name: str = Field(..., description="Full name of decision maker")
-    title: Optional[str] = Field(None, description="Executive title or job role")
+    target_company_id: Optional[int] = None
+    candidate_company_id: Optional[int] = None
+    name: Optional[str] = None
+    full_name: Optional[str] = None
+    normalized_name: Optional[str] = None
+    title: Optional[str] = None
+    published_title: Optional[str] = None
+    department: Optional[str] = None
+    role_category: RoleCategory = RoleCategory.OTHER
+    associated_company: Optional[str] = None
+    professional_relevance: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     linkedin_url: Optional[str] = None
     source_url: str = Field(..., description="Source URL where this contact was extracted from")
+    source_type: str = "HTML"
+    supporting_quote: Optional[str] = None
+    verification_status: str = "UNVERIFIED"
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    updated_at: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_name_and_title(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "full_name" in data and not data.get("name"):
+                data["name"] = data["full_name"]
+            elif "name" in data and not data.get("full_name"):
+                data["full_name"] = data["name"]
+            if "published_title" in data and not data.get("title"):
+                data["title"] = data["published_title"]
+            elif "title" in data and not data.get("published_title"):
+                data["published_title"] = data["title"]
+        return data
 
 
 class ScrapeEvidence(BaseModel):
@@ -229,6 +348,8 @@ class CrawlJob(BaseModel):
     workflow: WorkflowType = WorkflowType.GENERAL
     company_id: Optional[int] = None
     company_name: Optional[str] = None
+    objective: Optional[str] = None
+    target_product: Optional[str] = None
     status: CrawlJobStatus = CrawlJobStatus.PENDING
     cancellation_requested: bool = False
     max_depth: int = 2
@@ -280,8 +401,177 @@ class CreateCrawlJobRequest(BaseModel):
         description="Workflow context: 'RECOV', 'JEDOX', or 'GENERAL'"
     )
     company_name: Optional[str] = None
+    objective: Optional[str] = Field(
+        default=None,
+        description="Research objective (e.g., 'find customers using Jedox')"
+    )
+    target_product: Optional[str] = Field(
+        default=None,
+        description="Target software or product to verify usage of (e.g. 'Jedox')"
+    )
     max_depth: Optional[int] = Field(default=2, ge=0, le=10)
     max_pages: Optional[int] = Field(default=100, ge=1, le=500)
     max_pages_per_domain: Optional[int] = Field(default=30, ge=1, le=200)
     allowed_domains: Optional[List[str]] = None
+
+
+# -------------------------------------------------------------
+# Customer Candidate & Verification Checklist Models
+# -------------------------------------------------------------
+
+class CandidateClassification(str, Enum):
+    """Verification classification for discovered customer candidates."""
+    CONFIRMED = "CONFIRMED"                      # Both customer relationship and product usage supported
+    PARTIALLY_VERIFIED = "PARTIALLY_VERIFIED"    # Exactly one is supported
+    UNVERIFIED = "UNVERIFIED"                    # Neither is sufficiently supported
+    RESEARCH_INCOMPLETE = "RESEARCH_INCOMPLETE"  # Crawl failed or limits prevented completion
+
+
+class RelationshipType(str, Enum):
+    """Documented relationship between candidate and target company."""
+    CUSTOMER = "CUSTOMER"
+    CASE_STUDY = "CASE_STUDY"
+    TESTIMONIAL = "TESTIMONIAL"
+    PARTNER = "PARTNER"
+    VENDOR = "VENDOR"
+    MENTION = "MENTION"
+    UNKNOWN = "UNKNOWN"
+
+
+class VerificationChecklist(BaseModel):
+    """Granular verification checklist statuses."""
+    company_discovered: bool = False
+    customer_relationship_supported: bool = False
+    product_usage_supported: bool = False
+    source_url_recorded: bool = False
+    supporting_text_recorded: bool = False
+    verification_completed: bool = False
+
+
+class EvidenceReference(BaseModel):
+    """Source URL and supporting text citation for candidate verification."""
+    source_url: str
+    page_title: Optional[str] = None
+    supporting_text: str
+    relationship_claim: Optional[str] = None
+    product_claim: Optional[str] = None
+    extracted_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+
+
+class CustomerCandidate(BaseModel):
+    """A discovered potential customer candidate and its verification status."""
+    id: Optional[int] = None
+    job_id: Optional[int] = None
+    target_company_id: Optional[int] = None
+    candidate_name: str
+    normalized_name: str
+    target_product: str = "Jedox"
+    relationship_type: RelationshipType = RelationshipType.UNKNOWN
+    classification: CandidateClassification = CandidateClassification.UNVERIFIED
+    candidate_category: CandidateCategory = CandidateCategory.NAMED_COMPANY
+    checklist: VerificationChecklist = Field(default_factory=VerificationChecklist)
+    product_usage_status: str = "UNVERIFIED"
+    sources: List[EvidenceReference] = Field(default_factory=list)
+    missing_evidence_reason: Optional[str] = None
+    research_status: str = "PENDING"
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    updated_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+
+
+class DiscoveredDocument(BaseModel):
+    """A discovered resource file (PDF, Office, media) and its extraction outcome."""
+    id: Optional[int] = None
+    job_id: int
+    source_page_url: str
+    document_url: str
+    file_name: str
+    file_format: str
+    content_type: Optional[str] = None
+    file_size_bytes: int = 0
+    download_status: str = "PENDING"
+    extraction_status: str = "PENDING"
+    error_message: Optional[str] = None
+    extracted_text: Optional[str] = None
+    metadata_json: Optional[Dict[str, Any]] = None
+    sections_json: Optional[List[Dict[str, Any]]] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class PublicContact(BaseModel):
+    """Publicly published business contact information."""
+    id: Optional[int] = None
+    job_id: int
+    person_id: Optional[int] = None
+    company_id: Optional[int] = None
+    candidate_company_id: Optional[int] = None
+    contact_type: ContactType
+    contact_value: str
+    associated_person_name: Optional[str] = None
+    person_name: Optional[str] = None
+    associated_job_title: Optional[str] = None
+    job_title: Optional[str] = None
+    associated_company: Optional[str] = None
+    source_url: str
+    source_type: str = "HTML"
+    file_name: Optional[str] = None
+    supporting_quote: str = ""
+    source_location: Optional[str] = None
+    verification_status: ContactVerificationStatus = ContactVerificationStatus.UNVERIFIED
+    is_public: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_contact_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "person_name" in data and not data.get("associated_person_name"):
+                data["associated_person_name"] = data["person_name"]
+            elif "associated_person_name" in data and not data.get("person_name"):
+                data["person_name"] = data["associated_person_name"]
+            if "job_title" in data and not data.get("associated_job_title"):
+                data["associated_job_title"] = data["job_title"]
+            elif "associated_job_title" in data and not data.get("job_title"):
+                data["job_title"] = data["associated_job_title"]
+            if "file_type" in data and not data.get("source_type"):
+                data["source_type"] = data["file_type"]
+            if "supporting_quote" not in data or data.get("supporting_quote") is None:
+                data["supporting_quote"] = ""
+        return data
+
+    @property
+    def file_type(self) -> str:
+        return self.source_type
+
+
+class UnifiedEvidence(BaseModel):
+    """Unified traceable evidence record linking claims to fine-grained source locations."""
+    id: Optional[int] = None
+    job_id: int
+    company_id: Optional[int] = None
+    candidate_id: Optional[int] = None
+    person_id: Optional[int] = None
+    claim_type: ClaimType
+    claim_text: str
+    source_url: str
+    original_file_url: Optional[str] = None
+    source_format: str = "HTML"
+    file_name: Optional[str] = None
+    supporting_quote: str
+    source_location: Optional[str] = None
+    extraction_status: str = "SUCCESS"
+    verification_status: str = "UNVERIFIED"
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @property
+    def discovery_timestamp(self) -> str:
+        return self.created_at
+
 

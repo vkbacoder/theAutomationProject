@@ -11,10 +11,12 @@ import os
 from pathlib import Path
 from typing import Optional
 
+import io
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+import pandas as pd
 from pydantic import BaseModel, Field
 
 import config
@@ -29,20 +31,30 @@ from dedup import normalize_domain
 import database
 from models import (
     AddContactRequest,
+    CandidateCategory,
+    CandidateClassification,
+    ClaimType,
     CompanyProfile,
+    ContactType,
     CrawlJob,
     CrawlJobMetrics,
     CrawlJobStatus,
     CrawlPage,
     CrawlPageStatus,
     CreateCrawlJobRequest,
+    CustomerCandidate,
     DecisionMaker,
+    DiscoveredDocument,
     IngestLeadRequest,
     LeadRecord,
+    PublicContact,
     QualificationScore,
     QualifyLeadRequest,
+    RelationshipType,
     ResearchStatus,
+    RoleCategory,
     ScrapeEvidence,
+    UnifiedEvidence,
     WorkflowType,
 )
 import pipeline
@@ -299,10 +311,11 @@ def api_create_crawl_job(payload: CreateCrawlJobRequest):
         existing_company = database.find_company_by_domain(domain, payload.workflow)
         if existing_company:
             company_id = existing_company.id
-        elif payload.company_name:
-            norm_name = pipeline.normalize_company_name(payload.company_name)
+        else:
+            comp_name = payload.company_name.strip() if payload.company_name else pipeline.infer_company_name_from_title(None, domain)
+            norm_name = pipeline.normalize_company_name(comp_name)
             new_comp = CompanyProfile(
-                company_name=payload.company_name.strip(),
+                company_name=comp_name,
                 normalized_name=norm_name,
                 domain=domain,
                 website_url=norm_url,
@@ -318,6 +331,8 @@ def api_create_crawl_job(payload: CreateCrawlJobRequest):
         workflow=payload.workflow,
         company_id=company_id,
         company_name=payload.company_name,
+        objective=payload.objective,
+        target_product=payload.target_product,
         status=CrawlJobStatus.PENDING,
         max_depth=payload.max_depth or 2,
         max_pages=payload.max_pages or 100,
@@ -438,11 +453,287 @@ def api_retry_crawl_job(job_id: int):
         workflow=job.workflow,
         company_id=job.company_id,
         company_name=job.company_name,
+        objective=job.objective,
+        target_product=job.target_product,
         status=CrawlJobStatus.PENDING,
         max_depth=job.max_depth,
         max_pages=job.max_pages,
         max_pages_per_domain=job.max_pages_per_domain,
     )
     return database.create_crawl_job(retry_job)
+
+
+# -------------------------------------------------------------
+# Customer Candidate Discovery & Verification Endpoints
+# -------------------------------------------------------------
+
+@app.get("/api/crawl/jobs/{job_id}/candidates", response_model=list[CustomerCandidate])
+def api_get_job_candidates(
+    job_id: int,
+    classification: Optional[CandidateClassification] = None,
+    relationship: Optional[RelationshipType] = None,
+    limit: int = 200,
+    offset: int = 0,
+):
+    """Retrieve all discovered and verified customer candidates for a crawl job."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+    return database.get_customer_candidates(
+        job_id=job_id,
+        classification=classification,
+        relationship_type=relationship,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.post("/api/crawl/jobs/{job_id}/verify-candidates", response_model=list[CustomerCandidate])
+def api_verify_job_candidates(job_id: int):
+    """Execute customer candidate extraction and verification across all crawled pages for a job."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+    from candidate_verifier import verify_all_candidates_for_job
+    return verify_all_candidates_for_job(job_id)
+
+
+@app.get("/api/candidates/{candidate_id}", response_model=CustomerCandidate)
+def api_get_candidate(candidate_id: int):
+    """Retrieve details, evidence citations, and checklist for a customer candidate."""
+    cand = database.get_candidate_by_id(candidate_id)
+    if not cand:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Candidate #{candidate_id} not found.",
+        )
+    return cand
+
+
+# -------------------------------------------------------------
+# Multi-Format Document, Decision-Maker, and Evidence Endpoints
+# -------------------------------------------------------------
+
+@app.get("/api/crawl/jobs/{job_id}/documents", response_model=list[DiscoveredDocument])
+def api_get_job_documents(
+    job_id: int,
+    download_status: Optional[str] = None,
+    extraction_status: Optional[str] = None,
+    file_format: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
+):
+    """Retrieve discovered documents and media resources for a crawl job."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+    return database.get_discovered_documents(
+        job_id=job_id,
+        download_status=download_status,
+        extraction_status=extraction_status,
+        file_format=file_format,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/crawl/jobs/{job_id}/decision-makers", response_model=list[DecisionMaker])
+def api_get_job_decision_makers(
+    job_id: int,
+    role_category: Optional[RoleCategory] = None,
+    company: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
+):
+    """Retrieve discovered decision-makers and published roles for a crawl job."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+    return database.get_decision_makers(
+        job_id=job_id,
+        role_category=role_category,
+        company=company,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/crawl/jobs/{job_id}/contacts", response_model=list[PublicContact])
+def api_get_job_public_contacts(
+    job_id: int,
+    contact_type: Optional[ContactType] = None,
+    limit: int = 200,
+    offset: int = 0,
+):
+    """Retrieve public professional contacts (emails, phones, LinkedIn) for a crawl job."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+    return database.get_public_contacts(
+        job_id=job_id,
+        contact_type=contact_type,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/crawl/jobs/{job_id}/evidence", response_model=list[UnifiedEvidence])
+def api_get_job_unified_evidence(
+    job_id: int,
+    claim_type: Optional[ClaimType] = None,
+    limit: int = 300,
+    offset: int = 0,
+):
+    """Retrieve unified evidence records linking claims to source citations for auditability."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+    return database.get_unified_evidence(
+        job_id=job_id,
+        claim_type=claim_type,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/crawl/jobs/{job_id}/export")
+def api_export_job_data(job_id: int, format: str = "excel"):
+    """Export all research findings (candidates, evidence, decision-makers, contacts, documents) to Excel or CSV."""
+    job = database.get_crawl_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Crawl job #{job_id} not found.",
+        )
+
+    candidates = database.get_customer_candidates(job_id, limit=1000)
+    decision_makers = database.get_decision_makers(job_id, limit=1000)
+    contacts = database.get_public_contacts(job_id, limit=1000)
+    evidence = database.get_unified_evidence(job_id, limit=2000)
+    documents = database.get_discovered_documents(job_id, limit=1000)
+
+    df_candidates = pd.DataFrame([
+        {
+            "Candidate Name": c.candidate_name,
+            "Normalized Name": c.normalized_name,
+            "Category": c.candidate_category.value if hasattr(c.candidate_category, "value") else str(c.candidate_category),
+            "Classification": c.classification.value if hasattr(c.classification, "value") else str(c.classification),
+            "Relationship Type": c.relationship_type.value if hasattr(c.relationship_type, "value") else str(c.relationship_type),
+            "Target Product": c.target_product,
+            "Product Usage Status": c.product_usage_status,
+            "Missing Evidence Reason": c.missing_evidence_reason,
+            "Sources Count": len(c.sources),
+        }
+        for c in candidates
+    ])
+
+    df_evidence = pd.DataFrame([
+        {
+            "Claim Type": ev.claim_type.value if hasattr(ev.claim_type, "value") else str(ev.claim_type),
+            "Claim Text": ev.claim_text,
+            "Supporting Quote": ev.supporting_quote,
+            "Source URL": ev.source_url,
+            "Source Format": ev.source_format,
+            "Source Location": ev.source_location,
+            "Verification Status": ev.verification_status,
+            "Discovery Timestamp": getattr(ev, "discovery_timestamp", getattr(ev, "created_at", "")),
+        }
+        for ev in evidence
+    ])
+
+    df_decision_makers = pd.DataFrame([
+        {
+            "Full Name": dm.full_name,
+            "Published Title": dm.published_title,
+            "Role Category": dm.role_category.value if hasattr(dm.role_category, "value") else str(dm.role_category),
+            "Department": dm.department,
+            "Associated Company": dm.associated_company,
+            "Professional Relevance": dm.professional_relevance,
+            "Verification Status": dm.verification_status,
+            "Supporting Quote": dm.supporting_quote,
+            "Source URL": dm.source_url,
+            "Source Type": dm.source_type,
+        }
+        for dm in decision_makers
+    ])
+
+    df_contacts = pd.DataFrame([
+        {
+            "Contact Type": ct.contact_type.value if hasattr(ct.contact_type, "value") else str(ct.contact_type),
+            "Contact Value": ct.contact_value,
+            "Person Name": ct.person_name,
+            "Job Title": ct.job_title,
+            "Associated Company": ct.associated_company,
+            "Verification Status": ct.verification_status.value if hasattr(ct.verification_status, "value") else str(ct.verification_status),
+            "Supporting Quote": ct.supporting_quote,
+            "Source URL": ct.source_url,
+            "File Type": ct.file_type,
+        }
+        for ct in contacts
+    ])
+
+    df_documents = pd.DataFrame([
+        {
+            "File Name": d.file_name,
+            "Format": d.file_format,
+            "Content Type": d.content_type,
+            "File Size (Bytes)": d.file_size_bytes,
+            "Download Status": d.download_status,
+            "Extraction Status": d.extraction_status,
+            "Error Message": d.error_message,
+            "Document URL": d.document_url,
+            "Discovery Source Page": d.source_page_url,
+        }
+        for d in documents
+    ])
+
+    if format.lower() == "csv":
+        import zipfile
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("candidates.csv", df_candidates.to_csv(index=False))
+            zf.writestr("evidence.csv", df_evidence.to_csv(index=False))
+            zf.writestr("decision_makers.csv", df_decision_makers.to_csv(index=False))
+            zf.writestr("public_contacts.csv", df_contacts.to_csv(index=False))
+            zf.writestr("documents.csv", df_documents.to_csv(index=False))
+        zip_buf.seek(0)
+        return StreamingResponse(
+            zip_buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=job_{job_id}_research_data.zip"},
+        )
+
+    excel_buf = io.BytesIO()
+    with pd.ExcelWriter(excel_buf, engine="openpyxl") as writer:
+        df_candidates.to_excel(writer, sheet_name="Candidates", index=False)
+        df_evidence.to_excel(writer, sheet_name="Evidence", index=False)
+        df_decision_makers.to_excel(writer, sheet_name="Decision Makers", index=False)
+        df_contacts.to_excel(writer, sheet_name="Public Contacts", index=False)
+        df_documents.to_excel(writer, sheet_name="Documents & Media", index=False)
+    excel_buf.seek(0)
+    return StreamingResponse(
+        excel_buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=job_{job_id}_research_data.xlsx"},
+    )
+
 
 

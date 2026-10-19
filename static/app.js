@@ -7,8 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // Unified Control Form & Inputs
   const form = document.getElementById("unified-research-form");
-  const modeSingleBtn = document.getElementById("mode-single");
-  const modeCrawlBtn = document.getElementById("mode-crawl");
   const crawlParamsPanel = document.getElementById("crawl-params-panel");
   const urlInput = document.getElementById("url-input") || document.getElementById("research-url-input");
   const urlInputLabel = document.getElementById("url-input-label");
@@ -38,9 +36,40 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnCancelCrawl = document.getElementById("btn-cancel-crawl");
   const btnRetryCrawl = document.getElementById("btn-retry-crawl");
   const btnRefreshJob = document.getElementById("btn-refresh-job");
+  const btnViewResults = document.getElementById("btn-view-results");
+  const jobDisplaySeedUrl = document.getElementById("job-display-seed-url");
+  const jobTimingInfo = document.getElementById("job-timing-info");
+  const jobLastUpdated = document.getElementById("job-last-updated");
+  const jobOutcomeBanner = document.getElementById("job-outcome-banner");
+  const jobOutcomeIcon = document.getElementById("job-outcome-icon");
+  const jobOutcomeTitle = document.getElementById("job-outcome-title");
+  const jobOutcomeMessage = document.getElementById("job-outcome-message");
   const crawlProgressWrapper = document.getElementById("crawl-progress-wrapper");
   const crawlProgressFill = document.getElementById("crawl-progress-fill");
   const crawlProgressText = document.getElementById("crawl-progress-text");
+
+  // Recent Jobs Selector
+  const selectRecentJobs = document.getElementById("select-recent-jobs");
+  const btnLoadRecentJob = document.getElementById("btn-load-recent-job");
+
+  // Overview Tab References
+  const ovJobId = document.getElementById("ov-job-id");
+  const ovSeedUrl = document.getElementById("ov-seed-url");
+  const ovWorkflow = document.getElementById("ov-workflow");
+  const ovCompanyName = document.getElementById("ov-company-name");
+  const ovObjective = document.getElementById("ov-objective");
+  const ovTargetProduct = document.getElementById("ov-target-product");
+  const ovBoundaries = document.getElementById("ov-boundaries");
+  const ovStatus = document.getElementById("ov-status");
+  const ovStopReason = document.getElementById("ov-stop-reason");
+  const ovCountCompanies = document.getElementById("ov-count-companies");
+  const ovCountRelVerified = document.getElementById("ov-count-rel-verified");
+  const ovCountUsageVerified = document.getElementById("ov-count-usage-verified");
+  const ovCountDms = document.getElementById("ov-count-dms");
+  const ovCountContacts = document.getElementById("ov-count-contacts");
+  const ovCountDocs = document.getElementById("ov-count-docs");
+  const ovCountPages = document.getElementById("ov-count-pages");
+  const ovCountEvidence = document.getElementById("ov-count-evidence");
 
   // Top Metric Summary Boxes
   const jobPagesCrawled = document.getElementById("job-pages-crawled");
@@ -67,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const coopDetectedChips = document.getElementById("coop-detected-chips");
 
   // Workspace Results Table & Filters
-  const workspaceSection = document.getElementById("workspace-section");
+  const workspaceSection = document.getElementById("intel-workspace-section") || document.getElementById("workspace-section");
   const workspaceResultsCount = document.getElementById("workspace-results-count");
   const workspaceSearchInput = document.getElementById("workspace-search-input");
   const workspaceStatusFilter = document.getElementById("workspace-status-filter");
@@ -112,11 +141,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // APPLICATION STATE
   // ==========================================
-  let currentMode = "single"; // "single" | "crawl"
   let activeCrawlJobId = null;
   let crawlPollTimer = null;
   let workspaceRecords = []; // Normalized records array
   let currentInspectedRecord = null;
+  let currentJobData = null;
 
   // Cooperative Topics Dictionary for Keyword Scanning
   const COOP_TOPICS = [
@@ -133,141 +162,173 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // INITIALIZATION & EVENT HANDLERS
   // ==========================================
-  
-  // Mode Switcher
-  modeSingleBtn.addEventListener("click", () => setMode("single"));
-  modeCrawlBtn.addEventListener("click", () => setMode("crawl"));
-
-  function setMode(mode) {
-    currentMode = mode;
-    if (mode === "single") {
-      modeSingleBtn.classList.add("active");
-      modeSingleBtn.setAttribute("aria-checked", "true");
-      modeCrawlBtn.classList.remove("active");
-      modeCrawlBtn.setAttribute("aria-checked", "false");
-      crawlParamsPanel.classList.add("hidden");
-      urlInputLabel.textContent = "Target Webpage URL (Single-Page Ingestion)";
-      researchBtnText.textContent = "⚡ Scrape Page";
-      if (!urlInput.value) urlInput.placeholder = "https://cooperatives.gov.in/";
-    } else {
-      modeCrawlBtn.classList.add("active");
-      modeCrawlBtn.setAttribute("aria-checked", "true");
-      modeSingleBtn.classList.remove("active");
-      modeSingleBtn.setAttribute("aria-checked", "false");
-      crawlParamsPanel.classList.remove("hidden");
-      urlInputLabel.textContent = "Seed URL for Recursive Website Crawl";
-      researchBtnText.textContent = "🕷️ Start Website Crawl";
-      if (!urlInput.value) urlInput.placeholder = "https://cooperatives.gov.in/";
-    }
-  }
 
   // Presets
-  presetChips.forEach(chip => {
-    chip.addEventListener("click", () => {
-      const url = chip.getAttribute("data-url");
-      if (url) {
-        urlInput.value = url;
-        urlInput.focus();
-      }
+  if (presetChips) {
+    presetChips.forEach(chip => {
+      chip.addEventListener("click", () => {
+        const url = chip.getAttribute("data-url");
+        if (url && urlInput) {
+          urlInput.value = url;
+          urlInput.focus();
+        }
+      });
     });
-  });
+  }
 
   // Clear URL button
-  btnClearUrl.addEventListener("click", () => {
-    urlInput.value = "";
-    hideError();
-    urlInput.focus();
-  });
+  if (btnClearUrl) {
+    btnClearUrl.addEventListener("click", () => {
+      if (urlInput) {
+        urlInput.value = "";
+        urlInput.focus();
+      }
+      hideError();
+    });
+  }
 
   // Dismiss error
-  btnDismissError.addEventListener("click", hideError);
+  if (btnDismissError) btnDismissError.addEventListener("click", hideError);
 
-  // Form Submission
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    startResearch();
-  });
+  // Start Research Button Click & Form Submission Handlers
+  if (btnStartResearch) {
+    btnStartResearch.addEventListener("click", (e) => {
+      e.preventDefault();
+      startResearch();
+    });
+  }
+
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      startResearch();
+    });
+  }
+
+  if (urlInput) {
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        startResearch();
+      }
+    });
+  }
 
   // Cancel Job
-  btnCancelCrawl.addEventListener("click", cancelActiveCrawlJob);
+  if (btnCancelCrawl) btnCancelCrawl.addEventListener("click", cancelActiveCrawlJob);
 
   // Retry Failed
-  btnRetryCrawl.addEventListener("click", retryActiveCrawlJob);
+  if (btnRetryCrawl) btnRetryCrawl.addEventListener("click", retryActiveCrawlJob);
 
   // Manual Refresh
-  btnRefreshJob.addEventListener("click", () => {
-    if (activeCrawlJobId) {
-      pollJobDetails(activeCrawlJobId);
-      pollJobResults(activeCrawlJobId);
-    }
-  });
+  if (btnRefreshJob) {
+    btnRefreshJob.addEventListener("click", () => {
+      if (activeCrawlJobId) {
+        pollJobDetails(activeCrawlJobId);
+        pollJobMetrics(activeCrawlJobId);
+        pollJobResults(activeCrawlJobId);
+      }
+    });
+  }
+
+  // View Results Button (Scroll to results workspace)
+  if (btnViewResults) {
+    btnViewResults.addEventListener("click", () => {
+      if (workspaceSection) {
+        workspaceSection.classList.remove("hidden");
+        workspaceSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (activeCrawlJobId && intelCandidates.length === 0) {
+        runCandidateVerificationAndFetchIntel(activeCrawlJobId);
+      }
+    });
+  }
+
+  // Recent Jobs Selector Handlers
+  if (selectRecentJobs) {
+    selectRecentJobs.addEventListener("change", () => {
+      const val = selectRecentJobs.value;
+      if (val) loadJobById(parseInt(val, 10));
+    });
+  }
+  if (btnLoadRecentJob) {
+    btnLoadRecentJob.addEventListener("click", () => {
+      if (selectRecentJobs && selectRecentJobs.value) {
+        loadJobById(parseInt(selectRecentJobs.value, 10));
+      }
+    });
+  }
 
   // Table Search and Filtering
-  workspaceSearchInput.addEventListener("input", renderWorkspaceTable);
-  workspaceStatusFilter.addEventListener("change", renderWorkspaceTable);
-  workspaceSortSelect.addEventListener("change", renderWorkspaceTable);
+  if (workspaceSearchInput) workspaceSearchInput.addEventListener("input", renderWorkspaceTable);
+  if (workspaceStatusFilter) workspaceStatusFilter.addEventListener("change", renderWorkspaceTable);
+  if (workspaceSortSelect) workspaceSortSelect.addEventListener("change", renderWorkspaceTable);
 
   // CSV & JSON Exports
-  btnExportCsv.addEventListener("click", exportAsCsv);
-  btnExportJson.addEventListener("click", exportAsJson);
+  if (btnExportCsv) btnExportCsv.addEventListener("click", exportAsCsv);
+  if (btnExportJson) btnExportJson.addEventListener("click", exportAsJson);
 
   // Modal Close Handlers
-  btnCloseModal.addEventListener("click", closeRecordModal);
-  recordModal.addEventListener("click", (e) => {
-    if (e.target === recordModal) closeRecordModal();
-  });
+  if (btnCloseModal) btnCloseModal.addEventListener("click", closeRecordModal);
+  if (recordModal) {
+    recordModal.addEventListener("click", (e) => {
+      if (e.target === recordModal) closeRecordModal();
+    });
+  }
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !recordModal.classList.contains("hidden")) {
+    if (e.key === "Escape" && recordModal && !recordModal.classList.contains("hidden")) {
       closeRecordModal();
     }
   });
 
   // Modal Copy Buttons
-  btnModalCopyText.addEventListener("click", () => {
-    copyToClipboard(modalTextBody.textContent, btnModalCopyText, "📋 Copy Full Text");
-  });
-  btnModalCopyJson.addEventListener("click", () => {
-    copyToClipboard(modalJsonBody.textContent, btnModalCopyJson, "📋 Copy JSON");
-  });
+  if (btnModalCopyText) {
+    btnModalCopyText.addEventListener("click", () => {
+      if (modalTextBody) copyToClipboard(modalTextBody.textContent, btnModalCopyText, "📋 Copy Full Text");
+    });
+  }
+  if (btnModalCopyJson) {
+    btnModalCopyJson.addEventListener("click", () => {
+      if (modalJsonBody) copyToClipboard(modalJsonBody.textContent, btnModalCopyJson, "📋 Copy JSON");
+    });
+  }
 
   // Modal Tab Switching
-  modalTabBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.getAttribute("data-target");
-      modalTabBtns.forEach(b => b.classList.remove("active"));
-      modalTabContents.forEach(c => c.classList.remove("active"));
-      btn.classList.add("active");
-      const targetContent = document.getElementById(targetId);
-      if (targetContent) targetContent.classList.add("active");
+  if (modalTabBtns) {
+    modalTabBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-target");
+        modalTabBtns.forEach(b => b.classList.remove("active"));
+        if (modalTabContents) modalTabContents.forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        const targetContent = document.getElementById(targetId);
+        if (targetContent) targetContent.classList.add("active");
+      });
     });
-  });
+  }
 
   // ==========================================
   // CORE RESEARCH WORKFLOW
   // ==========================================
   async function startResearch() {
     hideError();
-    const rawUrl = urlInput.value.trim();
+    const rawUrl = urlInput ? urlInput.value.trim() : "";
 
     // Validation
     if (!rawUrl) {
       showError("URL Required", "Please enter a valid HTTP or HTTPS destination URL to proceed.");
-      urlInput.focus();
+      if (urlInput) urlInput.focus();
       return;
     }
 
-    if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
-      showError("Invalid Protocol", "URL must begin with http:// or https:// (e.g. https://cooperatives.gov.in/)");
-      urlInput.focus();
-      return;
+    let targetUrl = rawUrl;
+    if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+      targetUrl = "https://" + targetUrl;
+      if (urlInput) urlInput.value = targetUrl;
     }
 
-    // Dispatch based on active mode
-    if (currentMode === "single") {
-      await executeSinglePageScrape(rawUrl);
-    } else {
-      await executeWebsiteCrawl(rawUrl);
-    }
+    // Primary Research Workflow: Recursive Website Crawl
+    await executeWebsiteCrawl(targetUrl);
   }
 
   // ------------------------------------------
@@ -282,21 +343,23 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCrawlJobId = null;
 
     // Show live monitor card in Single-Page mode
-    liveJobCard.classList.remove("hidden");
-    jobTitleText.textContent = "Single-Page Ingestion";
-    jobDisplayId.textContent = "DIRECT";
-    jobStatusBadge.textContent = "INGESTING";
-    jobStatusBadge.className = "badge badge-running";
-    btnCancelCrawl.disabled = true;
-    btnRetryCrawl.classList.add("hidden");
-    btnRefreshJob.classList.add("hidden");
+    if (liveJobCard) liveJobCard.classList.remove("hidden");
+    if (jobTitleText) jobTitleText.textContent = "Single-Page Ingestion";
+    if (jobDisplayId) jobDisplayId.textContent = "DIRECT";
+    if (jobStatusBadge) {
+      jobStatusBadge.textContent = "INGESTING";
+      jobStatusBadge.className = "badge badge-running";
+    }
+    if (btnCancelCrawl) btnCancelCrawl.disabled = true;
+    if (btnRetryCrawl) btnRetryCrawl.classList.add("hidden");
+    if (btnRefreshJob) btnRefreshJob.classList.add("hidden");
 
-    crawlProgressFill.style.width = "40%";
-    crawlProgressText.textContent = "Connecting with SSRF & TLS verification...";
-    jobPagesCrawled.textContent = "0";
-    jobDiscoveredUrls.textContent = "0";
-    jobPagesFailed.textContent = "0";
-    jobMaxDepth.textContent = "0";
+    if (crawlProgressFill) crawlProgressFill.style.width = "40%";
+    if (crawlProgressText) crawlProgressText.textContent = "Connecting with SSRF & TLS verification...";
+    if (jobPagesCrawled) jobPagesCrawled.textContent = "0";
+    if (jobDiscoveredUrls) jobDiscoveredUrls.textContent = "0";
+    if (jobPagesFailed) jobPagesFailed.textContent = "0";
+    if (jobMaxDepth) jobMaxDepth.textContent = "0";
 
     try {
       const startTime = performance.now();
@@ -376,7 +439,7 @@ document.addEventListener("DOMContentLoaded", () => {
       metricStopReason.textContent = isExtractionSuccess ? "HTTP_200_OK" : (data.error || "FAILED");
 
       // Show sections
-      workspaceSection.classList.remove("hidden");
+      if (workspaceSection) workspaceSection.classList.remove("hidden");
       renderWorkspaceTable();
       updateCooperativeIntelligence(workspaceRecords);
 
@@ -403,15 +466,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     workspaceRecords = [];
 
+    const crawlObjective = document.getElementById("crawl-objective");
+    const crawlTargetProduct = document.getElementById("crawl-target-product");
+
     const payload = {
       url: url,
       workflow: crawlWorkflow.value || "GENERAL",
       company_name: crawlCompanyName.value.trim() || undefined,
+      objective: (crawlObjective && crawlObjective.value.trim()) || undefined,
+      target_product: (crawlTargetProduct && crawlTargetProduct.value.trim()) || undefined,
       max_depth: parseInt(crawlMaxDepth.value, 10) || 2,
       max_pages: parseInt(crawlMaxPages.value, 10) || 20,
       max_pages_per_domain: parseInt(crawlMaxDomain.value, 10) || 20
     };
 
+    let job = null;
     try {
       const resp = await fetch("/api/crawl/jobs", {
         method: "POST",
@@ -419,24 +488,47 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(payload)
       });
 
-      const job = await resp.json();
-      setLoading(false);
+      job = await resp.json();
 
       if (!resp.ok) {
-        showError("Failed to Start Crawl Job", job.detail || "Crawl job submission rejected.");
+        setLoading(false);
+        console.error("Crawl dispatch rejected by API:", resp.status, job);
+        showError("Failed to Start Crawl Job", job.detail || `Crawl job submission rejected with HTTP ${resp.status}`);
         return;
       }
-
-      activeCrawlJobId = job.id;
-      displayCrawlJobHeader(job);
-      workspaceSection.classList.remove("hidden");
-
-      // Begin active polling
-      startJobPolling(job.id);
-
-    } catch (err) {
+    } catch (netErr) {
       setLoading(false);
-      showError("Crawl Dispatch Error", err.message || "Unable to reach /api/crawl/jobs");
+      console.error("Crawl Dispatch Network Exception:", netErr);
+      showError("Crawl Dispatch Error", `${netErr.message || "Unable to reach /api/crawl/jobs"}\n${netErr.stack || ""}`);
+      return;
+    }
+
+    // Keep button in crawling progress state during background execution
+    setLoading(true, `🕷️ Crawling... (Job #${job.id})`);
+    console.info("Crawl job successfully created on server. Job ID:", job.id, "Status:", job.status);
+    activeCrawlJobId = job.id;
+    currentJobData = job;
+
+    // Refresh recent jobs list so the new job appears
+    fetchRecentJobs();
+
+    // Perform UI updates with dedicated error handling so a cosmetic issue never masks successful creation
+    try {
+      displayCrawlJobHeader(job);
+      if (liveJobCard) {
+        liveJobCard.classList.remove("hidden");
+        liveJobCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      if (workspaceSection) workspaceSection.classList.remove("hidden");
+    } catch (uiErr) {
+      console.error("Diagnostic: Error updating UI header for job #" + job.id + ":", uiErr);
+    }
+
+    // Always initiate polling for the created job
+    try {
+      startJobPolling(job.id);
+    } catch (pollErr) {
+      console.error("Diagnostic: Error starting polling for job #" + job.id + ":", pollErr);
     }
   }
 
@@ -459,7 +551,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (isJobDone) {
         clearInterval(crawlPollTimer);
         crawlPollTimer = null;
-        btnRefreshJob.classList.remove("hidden");
+        setLoading(false);
+        if (btnRefreshJob) btnRefreshJob.classList.remove("hidden");
+        fetchRecentJobs();
+        await runCandidateVerificationAndFetchIntel(jobId);
       }
     }, 2000);
   }
@@ -467,12 +562,17 @@ document.addEventListener("DOMContentLoaded", () => {
   async function pollJobDetails(jobId) {
     try {
       const resp = await fetch(`/api/crawl/jobs/${jobId}`);
-      if (!resp.ok) return true;
+      if (!resp.ok) {
+        console.warn(`Poll job details returned HTTP ${resp.status}`);
+        return false;
+      }
       const job = await resp.json();
+      currentJobData = job;
       displayCrawlJobHeader(job);
       return (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED");
     } catch (err) {
       console.warn("Poll job details error:", err);
+      if (jobLastUpdated) jobLastUpdated.textContent = "Reconnecting...";
       return false;
     }
   }
@@ -521,45 +621,170 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function displayCrawlJobHeader(job) {
-    liveJobCard.classList.remove("hidden");
-    jobTitleText.textContent = "Recursive Crawl Job #";
-    jobDisplayId.textContent = job.id;
+  function formatDuration(seconds) {
+    if (isNaN(seconds) || seconds < 0) return "0s";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
 
-    // Status Badge
-    jobStatusBadge.textContent = job.status || "UNKNOWN";
-    if (job.status === "COMPLETED") {
-      jobStatusBadge.className = "badge badge-success";
-    } else if (job.status === "RUNNING") {
-      jobStatusBadge.className = "badge badge-running";
-    } else if (job.status === "FAILED") {
-      jobStatusBadge.className = "badge badge-danger";
-    } else if (job.status === "CANCELLED") {
-      jobStatusBadge.className = "badge badge-cancelled";
-    } else {
-      jobStatusBadge.className = "badge badge-pending";
+  function displayCrawlJobHeader(job) {
+    if (!job) return;
+    if (liveJobCard) liveJobCard.classList.remove("hidden");
+    if (jobTitleText) jobTitleText.textContent = "Recursive Crawl Job #";
+    if (jobDisplayId) jobDisplayId.textContent = job.id ? String(job.id) : "-";
+
+    // Explicit Status Badge
+    if (jobStatusBadge) {
+      const s = (job.status || "PENDING").toUpperCase();
+      if (s === "COMPLETED") {
+        jobStatusBadge.textContent = "COMPLETED";
+        jobStatusBadge.className = "badge badge-completed";
+      } else if (s === "RUNNING") {
+        jobStatusBadge.textContent = "RUNNING";
+        jobStatusBadge.className = "badge badge-running";
+      } else if (s === "FAILED") {
+        jobStatusBadge.textContent = "FAILED";
+        jobStatusBadge.className = "badge badge-failed";
+      } else if (s === "CANCELLED") {
+        jobStatusBadge.textContent = "CANCELLED";
+        jobStatusBadge.className = "badge badge-cancelled";
+      } else {
+        jobStatusBadge.textContent = "QUEUED / PENDING";
+        jobStatusBadge.className = "badge badge-pending";
+      }
     }
 
-    // Progress Bar
+    // Seed URL
+    if (jobDisplaySeedUrl) {
+      jobDisplaySeedUrl.textContent = job.seed_url || "Not available";
+      jobDisplaySeedUrl.href = job.seed_url || "#";
+    }
+
+    // Timing Information
+    if (jobTimingInfo) {
+      const startTimeStr = job.created_at ? new Date(job.created_at).toLocaleTimeString() : "-";
+      let elapsedSec = 0;
+      if (job.created_at) {
+        const startMs = new Date(job.created_at).getTime();
+        const endMs = (job.status === "COMPLETED" || job.status === "FAILED" || job.status === "CANCELLED") && job.updated_at
+          ? new Date(job.updated_at).getTime()
+          : Date.now();
+        elapsedSec = Math.max(0, Math.floor((endMs - startMs) / 1000));
+      }
+      jobTimingInfo.textContent = `Started: ${startTimeStr} • Elapsed: ${formatDuration(elapsedSec)}`;
+    }
+
+    // Last Status Update Time
+    if (jobLastUpdated) {
+      jobLastUpdated.textContent = new Date().toLocaleTimeString();
+    }
+
+    // Meaningful Progress Bar
     const maxP = job.max_pages || 20;
     const crawled = job.pages_crawled || 0;
     const pct = Math.min(100, Math.round((crawled / maxP) * 100));
-    crawlProgressFill.style.width = `${pct}%`;
-    crawlProgressText.textContent = `${crawled} / ${maxP} Pages Crawled (${pct}%)`;
+    if (crawlProgressFill) crawlProgressFill.style.width = `${pct}%`;
+    if (crawlProgressText) {
+      if (job.status === "RUNNING" && crawled === 0) {
+        crawlProgressFill.style.width = "20%";
+        crawlProgressText.textContent = `0 / ${maxP} Pages Crawled (Connecting & discovering pages...)`;
+      } else {
+        crawlProgressText.textContent = `${crawled} / ${maxP} Pages Crawled (${pct}% of page limit)`;
+      }
+    }
 
     // Counters
-    jobPagesCrawled.textContent = crawled.toLocaleString();
-    jobDiscoveredUrls.textContent = (job.discovered_urls_count || 0).toLocaleString();
-    jobPagesFailed.textContent = (job.pages_failed || 0).toLocaleString();
-    jobMaxDepth.textContent = String(job.max_depth || 2);
+    if (jobPagesCrawled) jobPagesCrawled.textContent = crawled.toLocaleString();
+    if (jobDiscoveredUrls) jobDiscoveredUrls.textContent = (job.discovered_urls_count || 0).toLocaleString();
+    if (jobPagesFailed) jobPagesFailed.textContent = (job.pages_failed || 0).toLocaleString();
+    if (jobMaxDepth) {
+      const curDepth = (job.metrics && job.metrics.request_depth_max !== undefined) ? job.metrics.request_depth_max : (job.depth_reached !== undefined ? job.depth_reached : 0);
+      jobMaxDepth.textContent = `${curDepth} / ${job.max_depth || 2}`;
+    }
+
+    // Outcome Message Banner
+    if (jobOutcomeBanner) {
+      const reason = (job.metrics && job.metrics.stop_reason) ? job.metrics.stop_reason : "";
+      if (job.status === "COMPLETED") {
+        jobOutcomeBanner.className = "job-outcome-banner banner-success";
+        if (jobOutcomeIcon) jobOutcomeIcon.textContent = "✅";
+        if (jobOutcomeTitle) jobOutcomeTitle.textContent = "Crawl Finished Successfully";
+        if (jobOutcomeMessage) jobOutcomeMessage.textContent = `Ingested ${crawled} page(s). Stop reason: ${reason || "Reached configured limits"}. Research findings verified below.`;
+        jobOutcomeBanner.classList.remove("hidden");
+      } else if (job.status === "FAILED") {
+        jobOutcomeBanner.className = "job-outcome-banner banner-danger";
+        if (jobOutcomeIcon) jobOutcomeIcon.textContent = "❌";
+        if (jobOutcomeTitle) jobOutcomeTitle.textContent = "Crawl Job Failed";
+        if (jobOutcomeMessage) jobOutcomeMessage.textContent = reason || job.error_message || "The crawl terminated prematurely with errors.";
+        jobOutcomeBanner.classList.remove("hidden");
+      } else if (job.status === "CANCELLED") {
+        jobOutcomeBanner.className = "job-outcome-banner banner-warning";
+        if (jobOutcomeIcon) jobOutcomeIcon.textContent = "⏹️";
+        if (jobOutcomeTitle) jobOutcomeTitle.textContent = "Crawl Job Cancelled";
+        if (jobOutcomeMessage) jobOutcomeMessage.textContent = "Crawl execution was cancelled by user.";
+        jobOutcomeBanner.classList.remove("hidden");
+      } else {
+        jobOutcomeBanner.classList.add("hidden");
+      }
+    }
 
     // Button states
-    btnCancelCrawl.disabled = (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED");
-    if (job.status === "FAILED" || (job.pages_failed > 0 && job.status === "COMPLETED")) {
-      btnRetryCrawl.classList.remove("hidden");
-    } else {
-      btnRetryCrawl.classList.add("hidden");
+    if (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED") {
+      setLoading(false);
     }
+    if (btnCancelCrawl) {
+      btnCancelCrawl.disabled = (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED");
+    }
+    if (btnRetryCrawl) {
+      if (job.status === "FAILED" || (job.pages_failed > 0 && job.status === "COMPLETED")) {
+        btnRetryCrawl.classList.remove("hidden");
+      } else {
+        btnRetryCrawl.classList.add("hidden");
+      }
+    }
+
+    // Update Overview Tab Configuration
+    updateOverviewTab(job);
+  }
+
+  function updateOverviewTab(job) {
+    if (!job) return;
+    if (ovJobId) ovJobId.textContent = `#${job.id}`;
+    if (ovSeedUrl) {
+      ovSeedUrl.textContent = job.seed_url || "Not available";
+      ovSeedUrl.href = job.seed_url || "#";
+    }
+    if (ovWorkflow) ovWorkflow.textContent = job.workflow || "GENERAL";
+    if (ovCompanyName) ovCompanyName.textContent = job.company_name || "None specified";
+    if (ovObjective) ovObjective.textContent = job.objective || "Standard Business Intelligence";
+    if (ovTargetProduct) ovTargetProduct.textContent = job.target_product || "None specified";
+    if (ovBoundaries) {
+      ovBoundaries.textContent = `Max Depth: ${job.max_depth || 2} • Max Pages: ${job.max_pages || 20} • Max/Domain: ${job.max_pages_per_domain || 20}`;
+    }
+    if (ovStatus) {
+      ovStatus.textContent = job.status || "UNKNOWN";
+      if (job.status === "COMPLETED") ovStatus.className = "badge badge-completed";
+      else if (job.status === "RUNNING") ovStatus.className = "badge badge-running";
+      else if (job.status === "FAILED") ovStatus.className = "badge badge-failed";
+      else if (job.status === "CANCELLED") ovStatus.className = "badge badge-cancelled";
+      else ovStatus.className = "badge badge-pending";
+    }
+    if (ovStopReason) {
+      const reason = (job.metrics && job.metrics.stop_reason) ? job.metrics.stop_reason : (job.status === "RUNNING" ? "Active / In Progress" : "Not available");
+      ovStopReason.textContent = `Stop Reason: ${reason}`;
+    }
+
+    // Findings count from real data
+    if (ovCountCompanies) ovCountCompanies.textContent = intelCandidates.length;
+    if (ovCountRelVerified) ovCountRelVerified.textContent = intelCandidates.filter(c => (c.checklist && c.checklist.relationship_verified) || c.relationship_verified || c.relationship_type === "CUSTOMER" || c.relationship_type === "CLIENT").length;
+    if (ovCountUsageVerified) ovCountUsageVerified.textContent = intelCandidates.filter(c => (c.checklist && c.checklist.product_usage_verified) || c.product_usage_verified || c.product_usage_status === "CONFIRMED").length;
+    if (ovCountDms) ovCountDms.textContent = intelDecisionMakers.length;
+    if (ovCountContacts) ovCountContacts.textContent = intelContacts.length;
+    if (ovCountDocs) ovCountDocs.textContent = intelDocuments.length;
+    if (ovCountPages) ovCountPages.textContent = (job.pages_crawled || workspaceRecords.length || 0);
+    if (ovCountEvidence) ovCountEvidence.textContent = intelEvidence.length;
   }
 
   function displayMetricsGrid(metrics) {
@@ -591,7 +816,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
     metricDuration.textContent = m.crawl_duration_sec ? `${m.crawl_duration_sec.toFixed(1)}s` : "-";
     metricEvidenceLinked.textContent = (m.evidence_records_created || 0).toLocaleString();
-    metricStopReason.textContent = m.stop_reason || "-";
+    metricStopReason.textContent = m.stop_reason || "Not available";
+  }
+
+  // ------------------------------------------
+  // RECENT JOBS MANAGEMENT
+  // ------------------------------------------
+  async function fetchRecentJobs() {
+    if (!selectRecentJobs) return;
+    try {
+      const resp = await fetch("/api/crawl/jobs?limit=25");
+      if (!resp.ok) return;
+      const jobs = await resp.json();
+      selectRecentJobs.innerHTML = '<option value="">-- Load a Previous Job --</option>';
+      jobs.forEach(j => {
+        const opt = document.createElement("option");
+        opt.value = j.id;
+        opt.textContent = `Job #${j.id} - ${j.seed_url} [${j.status}] (${j.pages_crawled || 0} pages)`;
+        selectRecentJobs.appendChild(opt);
+      });
+    } catch (err) {
+      console.warn("Failed to load recent jobs:", err);
+    }
+  }
+
+  async function loadJobById(jobId) {
+    if (!jobId) return;
+    activeCrawlJobId = jobId;
+    if (crawlPollTimer) {
+      clearInterval(crawlPollTimer);
+      crawlPollTimer = null;
+    }
+    try {
+      const resp = await fetch(`/api/crawl/jobs/${jobId}`);
+      if (!resp.ok) {
+        showError("Job Not Found", `Could not retrieve crawl job #${jobId}`);
+        return;
+      }
+      const job = await resp.json();
+      currentJobData = job;
+      displayCrawlJobHeader(job);
+      if (liveJobCard) {
+        liveJobCard.classList.remove("hidden");
+        liveJobCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      if (workspaceSection) workspaceSection.classList.remove("hidden");
+
+      await pollJobMetrics(jobId);
+      await pollJobResults(jobId);
+
+      const isTerminal = (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED");
+      if (isTerminal) {
+        await runCandidateVerificationAndFetchIntel(jobId);
+      } else {
+        startJobPolling(jobId);
+      }
+    } catch (e) {
+      console.error("Failed to load job:", e);
+      showError("Error Loading Job", e.message || "Failed to communicate with API");
+    }
   }
 
   // ------------------------------------------
@@ -637,6 +920,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // COOPERATIVE INTELLIGENCE DISCOVERY SCAN
   // ==========================================
   function updateCooperativeIntelligence(records) {
+    if (!coopIntelligenceSection || !coopDetectedChips) return;
     if (!records || records.length === 0) {
       coopIntelligenceSection.classList.add("hidden");
       return;
@@ -735,7 +1019,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderWorkspaceTable() {
     const records = getFilteredAndSortedRecords();
-    workspaceResultsCount.textContent = `Showing ${records.length} of ${workspaceRecords.length} pages`;
+    if (workspaceResultsCount) {
+      workspaceResultsCount.textContent = `Showing ${records.length} of ${workspaceRecords.length} pages`;
+    }
 
     if (records.length === 0) {
       workspaceTbody.innerHTML = `
@@ -1070,7 +1356,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const exportPayload = {
       exported_at: new Date().toISOString(),
       total_records: workspaceRecords.length,
-      mode: currentMode,
+      mode: "crawl",
       records: workspaceRecords.map(r => ({
         id: r.id,
         depth: r.depth,
@@ -1112,6 +1398,488 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
+  // INTELLIGENCE DASHBOARD & CONTROLS
+  // ==========================================
+  let intelCandidates = [];
+  let intelDecisionMakers = [];
+  let intelContacts = [];
+  let intelDocuments = [];
+  let intelEvidence = [];
+
+  // Tab switching handler
+  document.querySelectorAll(".intel-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+      document.querySelectorAll(".intel-tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".intel-tab-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) targetPanel.classList.add("active");
+    });
+  });
+
+  // Action Buttons
+  const btnReverify = document.getElementById("btn-reverify-candidates");
+  if (btnReverify) {
+    btnReverify.addEventListener("click", async () => {
+      if (activeCrawlJobId) {
+        btnReverify.disabled = true;
+        btnReverify.textContent = "⏳ Verifying...";
+        await runCandidateVerificationAndFetchIntel(activeCrawlJobId);
+        btnReverify.disabled = false;
+        btnReverify.textContent = "⚡ Re-Verify All Findings";
+      }
+    });
+  }
+
+  const btnExportExcelIntel = document.getElementById("btn-export-excel");
+  if (btnExportExcelIntel) {
+    btnExportExcelIntel.addEventListener("click", () => {
+      if (activeCrawlJobId) {
+        window.open(`/api/crawl/jobs/${activeCrawlJobId}/export?format=excel`, "_blank");
+      } else {
+        showError("No Active Job", "Please run or select a research crawl job first.");
+      }
+    });
+  }
+
+  const btnExportCsvIntel = document.getElementById("btn-export-csv-dataset");
+  if (btnExportCsvIntel) {
+    btnExportCsvIntel.addEventListener("click", () => {
+      if (activeCrawlJobId) {
+        window.open(`/api/crawl/jobs/${activeCrawlJobId}/export?format=csv`, "_blank");
+      } else {
+        showError("No Active Job", "Please run or select a research crawl job first.");
+      }
+    });
+  }
+
+  // Filter Listeners
+  const filterCompSearch = document.getElementById("filter-companies-search");
+  const filterCompClass = document.getElementById("filter-companies-classification");
+  const filterCompCat = document.getElementById("filter-companies-category");
+  if (filterCompSearch) filterCompSearch.addEventListener("input", renderCompaniesTable);
+  if (filterCompClass) filterCompClass.addEventListener("change", renderCompaniesTable);
+  if (filterCompCat) filterCompCat.addEventListener("change", renderCompaniesTable);
+
+  const filterRelSearch = document.getElementById("filter-rel-search");
+  if (filterRelSearch) filterRelSearch.addEventListener("input", renderRelationshipEvidenceTable);
+
+  const filterUsageSearch = document.getElementById("filter-usage-search");
+  if (filterUsageSearch) filterUsageSearch.addEventListener("input", renderProductUsageEvidenceTable);
+
+  const filterDmSearch = document.getElementById("filter-dms-search");
+  const filterDmRole = document.getElementById("filter-dms-role");
+  if (filterDmSearch) filterDmSearch.addEventListener("input", renderDecisionMakersTable);
+  if (filterDmRole) filterDmRole.addEventListener("change", renderDecisionMakersTable);
+
+  const filterCtSearch = document.getElementById("filter-contacts-search");
+  const filterCtType = document.getElementById("filter-contacts-type");
+  if (filterCtSearch) filterCtSearch.addEventListener("input", renderPublicContactsTable);
+  if (filterCtType) filterCtType.addEventListener("change", renderPublicContactsTable);
+
+  const filterDocSearch = document.getElementById("filter-docs-search");
+  const filterDocFormat = document.getElementById("filter-docs-format");
+  if (filterDocSearch) filterDocSearch.addEventListener("input", renderDocumentsTable);
+  if (filterDocFormat) filterDocFormat.addEventListener("change", renderDocumentsTable);
+
+  const filterEvSearch = document.getElementById("filter-evidence-search");
+  const filterEvClaim = document.getElementById("filter-evidence-claim");
+  if (filterEvSearch) filterEvSearch.addEventListener("input", renderUnifiedEvidenceTable);
+  if (filterEvClaim) filterEvClaim.addEventListener("change", renderUnifiedEvidenceTable);
+
+  async function runCandidateVerificationAndFetchIntel(jobId) {
+    const intelSection = document.getElementById("intel-workspace-section");
+    if (intelSection) intelSection.classList.remove("hidden");
+    const jobIndicator = document.getElementById("intel-job-indicator");
+    if (jobIndicator) jobIndicator.textContent = `Job #${jobId} • Processing Intelligence...`;
+
+    try {
+      // 1. Trigger verification
+      await fetch(`/api/crawl/jobs/${jobId}/verify-candidates`, { method: "POST" });
+
+      // 2. Fetch all collections in parallel
+      const [resCands, resDms, resContacts, resDocs, resEv] = await Promise.all([
+        fetch(`/api/crawl/jobs/${jobId}/candidates`),
+        fetch(`/api/crawl/jobs/${jobId}/decision-makers`),
+        fetch(`/api/crawl/jobs/${jobId}/contacts`),
+        fetch(`/api/crawl/jobs/${jobId}/documents`),
+        fetch(`/api/crawl/jobs/${jobId}/evidence`),
+      ]);
+
+      intelCandidates = resCands.ok ? await resCands.json() : [];
+      intelDecisionMakers = resDms.ok ? await resDms.json() : [];
+      intelContacts = resContacts.ok ? await resContacts.json() : [];
+      intelDocuments = resDocs.ok ? await resDocs.json() : [];
+      intelEvidence = resEv.ok ? await resEv.json() : [];
+
+      if (jobIndicator) jobIndicator.textContent = `Job #${jobId} • Verified Findings`;
+
+      // 3. Render all tabs & KPIs
+      updateIntelKpis();
+      renderCompaniesTable();
+      renderRelationshipEvidenceTable();
+      renderProductUsageEvidenceTable();
+      renderDecisionMakersTable();
+      renderPublicContactsTable();
+      renderDocumentsTable();
+      renderUnifiedEvidenceTable();
+      renderFailuresTable();
+    } catch (e) {
+      console.error("Failed to load intelligence data:", e);
+      if (jobIndicator) jobIndicator.textContent = `Job #${jobId} • Extraction Incomplete`;
+    }
+  }
+
+  function updateIntelKpis() {
+    const confirmedCount = intelCandidates.filter(c => c.classification === "CONFIRMED").length;
+    const partialCount = intelCandidates.filter(c => c.classification === "PARTIALLY_VERIFIED").length;
+    const unverifiedCount = intelCandidates.filter(c => c.classification !== "CONFIRMED" && c.classification !== "PARTIALLY_VERIFIED").length;
+
+    const elConf = document.getElementById("kpi-confirmed-companies");
+    if (elConf) elConf.textContent = confirmedCount;
+    const elPart = document.getElementById("kpi-partial-companies");
+    if (elPart) elPart.textContent = partialCount;
+    const elUnv = document.getElementById("kpi-unverified-companies");
+    if (elUnv) elUnv.textContent = unverifiedCount;
+
+    const elDm = document.getElementById("kpi-decision-makers");
+    if (elDm) elDm.textContent = intelDecisionMakers.length;
+    const elCt = document.getElementById("kpi-public-contacts");
+    if (elCt) elCt.textContent = intelContacts.length;
+    const elDocs = document.getElementById("kpi-documents-processed");
+    if (elDocs) elDocs.textContent = intelDocuments.length;
+    const elEv = document.getElementById("kpi-evidence-count");
+    if (elEv) elEv.textContent = intelEvidence.length;
+
+    // Failures: failed documents or unverified incomplete candidates
+    const failedDocs = intelDocuments.filter(d => d.download_status === "FAILED" || d.extraction_status === "FAILED" || d.extraction_status === "UNSUPPORTED").length;
+    const elFail = document.getElementById("kpi-failures-logged");
+    if (elFail) elFail.textContent = failedDocs;
+
+    // Update tab badges
+    document.getElementById("tab-count-companies").textContent = intelCandidates.length;
+    document.getElementById("tab-count-rel").textContent = intelEvidence.filter(e => e.claim_type === "RELATIONSHIP" || e.claim_type === "CUSTOMER_RELATIONSHIP").length;
+    document.getElementById("tab-count-usage").textContent = intelEvidence.filter(e => e.claim_type === "PRODUCT_USAGE").length;
+    document.getElementById("tab-count-dms").textContent = intelDecisionMakers.length;
+    document.getElementById("tab-count-contacts").textContent = intelContacts.length;
+    document.getElementById("tab-count-docs").textContent = intelDocuments.length;
+    document.getElementById("tab-count-evidence").textContent = intelEvidence.length;
+    document.getElementById("tab-count-failures").textContent = failedDocs;
+
+    // Refresh overview tab with updated findings
+    if (currentJobData) {
+      updateOverviewTab(currentJobData);
+    }
+  }
+
+  function renderCompaniesTable() {
+    const tbody = document.getElementById("tbody-companies");
+    if (!tbody) return;
+
+    const q = (filterCompSearch ? filterCompSearch.value.trim().toLowerCase() : "");
+    const filterClass = (filterCompClass ? filterCompClass.value : "ALL");
+    const filterCat = (filterCompCat ? filterCompCat.value : "ALL");
+
+    const filtered = intelCandidates.filter(c => {
+      if (filterClass !== "ALL" && c.classification !== filterClass) return false;
+      if (filterCat !== "ALL" && c.candidate_category !== filterCat) return false;
+      if (q) {
+        const text = `${c.candidate_name} ${c.relationship_type} ${c.missing_evidence_reason || ""}`.toLowerCase();
+        if (!text.includes(q)) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No matching company candidates found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(c => {
+      let classBadge = "badge-unverified";
+      if (c.classification === "CONFIRMED") classBadge = "badge-confirmed";
+      else if (c.classification === "PARTIALLY_VERIFIED") classBadge = "badge-partial";
+      else if (c.classification === "RESEARCH_INCOMPLETE") classBadge = "badge-incomplete";
+
+      const catBadge = c.candidate_category === "NAMED_COMPANY" ? "badge-confirmed" : "badge-category";
+      const usageStatus = c.product_usage_status || "UNVERIFIED";
+      const usageBadge = usageStatus === "CONFIRMED" ? "badge-confirmed" : (usageStatus.includes("PARTNER") ? "badge-partial" : "badge-unverified");
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(c.candidate_name)}</strong></td>
+          <td><span class="badge ${catBadge}">${escapeHtml(c.candidate_category || "NAMED_COMPANY")}</span></td>
+          <td><span class="badge ${classBadge}">${escapeHtml(c.classification)}</span></td>
+          <td><span class="badge badge-unverified">${escapeHtml(c.relationship_type)}</span></td>
+          <td><span class="badge ${usageBadge}">${escapeHtml(usageStatus)}</span></td>
+          <td style="font-size:0.82rem; color:var(--text-muted);">${escapeHtml(c.missing_evidence_reason || "-")}</td>
+          <td style="text-align:center;"><span class="badge badge-category">${(c.sources || []).length} quotes</span></td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function renderRelationshipEvidenceTable() {
+    const tbody = document.getElementById("tbody-rel-evidence");
+    if (!tbody) return;
+
+    const q = (filterRelSearch ? filterRelSearch.value.trim().toLowerCase() : "");
+    const items = intelEvidence.filter(e => e.claim_type === "RELATIONSHIP" || e.claim_type === "CUSTOMER_RELATIONSHIP");
+
+    const filtered = items.filter(e => {
+      if (q && !`${e.claim_text} ${e.supporting_quote} ${e.source_url}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No relationship evidence records matching criteria.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(e => `
+      <tr>
+        <td><strong>${escapeHtml(e.claim_text.split(":")[0] || "Target Company")}</strong></td>
+        <td>${escapeHtml(e.claim_text.split(":")[1] || e.claim_text)}</td>
+        <td><div class="intel-quote-block">“${escapeHtml(e.supporting_quote)}”</div></td>
+        <td>
+          <a href="${escapeHtml(e.source_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(e.source_url)}</a>
+          <br><span class="badge ${e.verification_status === "CONFIRMED" ? "badge-confirmed" : "badge-partial"}">${escapeHtml(e.verification_status)}</span>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function renderProductUsageEvidenceTable() {
+    const tbody = document.getElementById("tbody-usage-evidence");
+    if (!tbody) return;
+
+    const q = (filterUsageSearch ? filterUsageSearch.value.trim().toLowerCase() : "");
+    const items = intelEvidence.filter(e => e.claim_type === "PRODUCT_USAGE");
+
+    const filtered = items.filter(e => {
+      if (q && !`${e.claim_text} ${e.supporting_quote} ${e.source_url}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No target product usage evidence matching criteria.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(e => `
+      <tr>
+        <td><strong>${escapeHtml(e.claim_text.split(" ")[0] || "Company")}</strong></td>
+        <td><span class="badge badge-category">Target Product</span></td>
+        <td>${escapeHtml(e.claim_text)}</td>
+        <td>
+          <div class="intel-quote-block">“${escapeHtml(e.supporting_quote)}”</div>
+          ${e.source_location ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">📍 <strong>Location:</strong> ${escapeHtml(e.source_location)}</div>` : ""}
+        </td>
+        <td>
+          <a href="${escapeHtml(e.source_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(e.source_url)}</a>
+          <br><span class="badge ${e.verification_status === "CONFIRMED" ? "badge-confirmed" : "badge-unverified"}">${escapeHtml(e.verification_status)}</span>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function renderDecisionMakersTable() {
+    const tbody = document.getElementById("tbody-decision-makers");
+    if (!tbody) return;
+
+    const q = (filterDmSearch ? filterDmSearch.value.trim().toLowerCase() : "");
+    const role = (filterDmRole ? filterDmRole.value : "ALL");
+
+    const filtered = intelDecisionMakers.filter(dm => {
+      if (role !== "ALL" && dm.role_category !== role) return false;
+      const name = dm.full_name || dm.name || "";
+      const title = dm.published_title || dm.title || "";
+      const comp = dm.associated_company || "";
+      if (q && !`${name} ${title} ${comp}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No decision-maker profiles found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(dm => `
+      <tr>
+        <td><strong>${escapeHtml(dm.full_name || dm.name || "Unknown")}</strong></td>
+        <td>${escapeHtml(dm.published_title || dm.title || "-")}</td>
+        <td><span class="badge badge-category">${escapeHtml(dm.role_category || "OTHER")}</span></td>
+        <td><strong>${escapeHtml(dm.associated_company || "Target Company")}</strong></td>
+        <td style="font-size:0.83rem; color:var(--text-muted);">${escapeHtml(dm.professional_relevance || "-")}</td>
+        <td>
+          <a href="${escapeHtml(dm.source_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(dm.source_url)}</a>
+          ${dm.supporting_quote ? `<div class="intel-quote-block">“${escapeHtml(dm.supporting_quote)}”</div>` : ""}
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function renderPublicContactsTable() {
+    const tbody = document.getElementById("tbody-public-contacts");
+    if (!tbody) return;
+
+    const q = (filterCtSearch ? filterCtSearch.value.trim().toLowerCase() : "");
+    const type = (filterCtType ? filterCtType.value : "ALL");
+
+    const filtered = intelContacts.filter(c => {
+      if (type !== "ALL" && c.contact_type !== type) return false;
+      const val = c.contact_value || "";
+      const pName = c.person_name || c.associated_person_name || "";
+      const comp = c.associated_company || "";
+      if (q && !`${val} ${pName} ${comp}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No public professional contacts found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(c => `
+      <tr>
+        <td><span class="badge badge-category">${escapeHtml(c.contact_type)}</span></td>
+        <td><code style="color:#a5b4fc; font-weight:600;">${escapeHtml(c.contact_value)}</code></td>
+        <td>${escapeHtml(c.person_name || c.associated_person_name || "-")}</td>
+        <td><strong>${escapeHtml(c.associated_company || "-")}</strong></td>
+        <td><span class="badge badge-verified-public">${escapeHtml(c.verification_status || "VERIFIED_PUBLIC")}</span></td>
+        <td>
+          <a href="${escapeHtml(c.source_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(c.source_url)}</a>
+          ${c.supporting_quote ? `<div class="intel-quote-block">“${escapeHtml(c.supporting_quote)}”</div>` : ""}
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function renderDocumentsTable() {
+    const tbody = document.getElementById("tbody-documents");
+    if (!tbody) return;
+
+    const q = (filterDocSearch ? filterDocSearch.value.trim().toLowerCase() : "");
+    const fmt = (filterDocFormat ? filterDocFormat.value : "ALL");
+
+    const filtered = intelDocuments.filter(d => {
+      if (fmt !== "ALL" && d.file_format !== fmt) return false;
+      if (q && !`${d.file_name} ${d.file_format} ${d.document_url}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No documents or media matching criteria.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(d => {
+      let extBadge = "badge-unverified";
+      if (d.extraction_status === "SUCCESS") extBadge = "badge-confirmed";
+      else if (d.extraction_status === "FAILED") extBadge = "badge-incomplete";
+      else if (d.extraction_status === "UNSUPPORTED") extBadge = "badge-partial";
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(d.file_name || "Document")}</strong></td>
+          <td><span class="badge badge-category">${escapeHtml(d.file_format)}</span></td>
+          <td style="font-family:var(--font-code); font-size:0.8rem;">${formatBytes(d.file_size_bytes)}</td>
+          <td><span class="badge ${d.download_status === "DOWNLOADED" ? "badge-confirmed" : "badge-incomplete"}">${escapeHtml(d.download_status)}</span></td>
+          <td><span class="badge ${extBadge}">${escapeHtml(d.extraction_status)}</span></td>
+          <td>
+            <a href="${escapeHtml(d.document_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(d.document_url)}</a>
+            ${d.error_message ? `<div style="color:#f87171; font-size:0.78rem; margin-top:4px;">${escapeHtml(d.error_message)}</div>` : ""}
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function renderUnifiedEvidenceTable() {
+    const tbody = document.getElementById("tbody-unified-evidence");
+    if (!tbody) return;
+
+    const q = (filterEvSearch ? filterEvSearch.value.trim().toLowerCase() : "");
+    const claim = (filterEvClaim ? filterEvClaim.value : "ALL");
+
+    const filtered = intelEvidence.filter(e => {
+      if (claim !== "ALL") {
+        if (claim === "RELATIONSHIP" && e.claim_type !== "RELATIONSHIP" && e.claim_type !== "CUSTOMER_RELATIONSHIP") return false;
+        else if (claim === "CONTACT" && e.claim_type !== "CONTACT" && e.claim_type !== "CONTACT_INFO") return false;
+        else if (claim !== "RELATIONSHIP" && claim !== "CONTACT" && e.claim_type !== claim) return false;
+      }
+      if (q && !`${e.claim_text} ${e.supporting_quote} ${e.source_url}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No unified evidence audit items found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(e => `
+      <tr>
+        <td><span class="badge badge-category">${escapeHtml(e.claim_type)}</span></td>
+        <td><strong>${escapeHtml(e.claim_text)}</strong></td>
+        <td><div class="intel-quote-block">“${escapeHtml(e.supporting_quote)}”</div></td>
+        <td>
+          <a href="${escapeHtml(e.source_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(e.source_url)}</a>
+          <br><span style="font-size:0.75rem; color:var(--text-subtle);">${escapeHtml(e.source_location || e.source_format)}</span>
+        </td>
+        <td><span class="badge ${e.verification_status === "CONFIRMED" ? "badge-confirmed" : "badge-partial"}">${escapeHtml(e.verification_status)}</span></td>
+      </tr>
+    `).join("");
+  }
+
+  function renderFailuresTable() {
+    const tbody = document.getElementById("tbody-failures");
+    if (!tbody) return;
+
+    const failures = [];
+    // 1. Failed documents
+    intelDocuments.forEach(d => {
+      if (d.download_status === "FAILED" || d.extraction_status === "FAILED" || d.extraction_status === "UNSUPPORTED") {
+        failures.push({
+          target: d.file_name || d.document_url,
+          type: `DOCUMENT (${d.file_format})`,
+          error: d.error_message || "Extraction was unsuccessful",
+          download_status: d.download_status,
+          extraction_status: d.extraction_status,
+        });
+      }
+    });
+
+    // 2. Failed crawled pages
+    workspaceRecords.forEach(p => {
+      if (p.extraction_status === "FAILED" || (p.http_status && p.http_status >= 400)) {
+        failures.push({
+          target: p.original_url,
+          type: "WEBPAGE (HTML)",
+          error: p.error_message || `HTTP ${p.http_status} Response Failure`,
+          download_status: "FAILED",
+          extraction_status: "FAILED",
+        });
+      }
+    });
+
+    if (failures.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No extraction failures or unsupported format errors logged for this job.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = failures.map(f => `
+      <tr>
+        <td><code style="color:#f87171;">${escapeHtml(f.target)}</code></td>
+        <td><span class="badge badge-category">${escapeHtml(f.type)}</span></td>
+        <td style="color:#fca5a5; font-size:0.85rem;">${escapeHtml(f.error)}</td>
+        <td><span class="badge badge-incomplete">${escapeHtml(f.download_status)}</span></td>
+        <td><span class="badge badge-incomplete">${escapeHtml(f.extraction_status)}</span></td>
+      </tr>
+    `).join("");
+  }
+
+  // ==========================================
   // HELPER UTILITIES
   // ==========================================
   function setLoading(isLoading, text) {
@@ -1124,19 +1892,21 @@ document.addEventListener("DOMContentLoaded", () => {
       btnStartResearch.disabled = false;
       btnClearUrl.disabled = false;
       researchSpinner.style.display = "none";
-      researchBtnText.textContent = currentMode === "single" ? "⚡ Scrape Page" : "🕷️ Start Website Crawl";
+      researchBtnText.textContent = "🕷️ Start Website Crawl";
     }
   }
 
   function showError(title, msg) {
-    errorTitle.textContent = title || "Action Failed";
-    errorMessage.textContent = msg || "An unknown error occurred.";
-    errorBanner.classList.remove("hidden");
-    errorBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (errorTitle) errorTitle.textContent = title || "Action Failed";
+    if (errorMessage) errorMessage.textContent = msg || "An unknown error occurred.";
+    if (errorBanner) {
+      errorBanner.classList.remove("hidden");
+      errorBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }
 
   function hideError() {
-    errorBanner.classList.add("hidden");
+    if (errorBanner) errorBanner.classList.add("hidden");
   }
 
   function formatBytes(bytes) {
@@ -1190,4 +1960,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.style.color = "";
     }, 1800);
   }
+
+  // Load recent jobs into selector on startup
+  fetchRecentJobs();
 });

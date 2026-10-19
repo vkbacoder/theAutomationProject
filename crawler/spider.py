@@ -12,16 +12,24 @@ from datetime import timezone
 import hashlib
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional, Set
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urldefrag, urljoin, urlparse
 
+from bs4 import BeautifulSoup
 import scrapy
 from scrapy.http import Response
 from twisted.python.failure import Failure
 
 import database
-from crawler.items import CrawledPageItem
+from crawler.items import CrawledPageItem, DiscoveredDocumentItem
 from dedup import normalize_domain
+from document_parser import (
+    DOC_EXTENSIONS,
+    IMAGE_EXTENSIONS,
+    RESOURCE_EXTENSIONS,
+    parse_document_content,
+)
 from scraper import parse_html_data, clean_text
 
 logger = logging.getLogger(__name__)
@@ -66,6 +74,8 @@ class RecursiveLeadSpider(scrapy.Spider):
         company_id: Optional[int | str] = None,
         db_path: Optional[str] = None,
         enable_sitemap: bool | str = True,
+        target_product: Optional[str] = None,
+        objective: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -79,6 +89,8 @@ class RecursiveLeadSpider(scrapy.Spider):
         self.company_id = int(company_id) if company_id is not None and str(company_id).isdigit() else None
         self.db_path = db_path
         self.enable_sitemap = str(enable_sitemap).lower() in ("true", "1", "yes")
+        self.target_product = (target_product or "").strip()
+        self.objective = (objective or "").strip()
 
         # Parse allowed domains
         if isinstance(allowed_domains, str):
@@ -183,14 +195,23 @@ class RecursiveLeadSpider(scrapy.Spider):
             )
 
     def parse(self, response: Response):
-        """Parse HTML page, yield evidence item, and discover subsequent links."""
+        """Parse HTML page, yield evidence item, and discover subsequent links and documents."""
         # 1. Cancellation check
         if database.is_cancellation_requested(self.job_id, db_path=self.db_path):
             logger.info("Job %s cancelled. Stopping spider.", self.job_id)
             self.crawler.engine.close_spider(self, "cancelled")
             return
 
-        # 2. Check total page limit
+        # 2. Check if response is a binary document or media file
+        content_type = response.headers.get(b"Content-Type", b"").decode("utf-8", errors="ignore").split(";")[0].strip().lower()
+        url_path = urlparse(response.url).path.lower()
+        is_doc_ext = any(url_path.endswith(ext) for ext in RESOURCE_EXTENSIONS)
+        is_doc_ct = any(ct in content_type for ct in ("pdf", "sheet", "excel", "officedocument", "powerpoint", "msword", "image", "csv"))
+        if is_doc_ext or is_doc_ct or response.meta.get("is_document"):
+            yield from self.parse_document(response)
+            return
+
+        # 3. Check total page limit
         if self.pages_crawled_count >= self.max_pages:
             logger.info("Reached max pages limit (%d). Closing spider.", self.max_pages)
             self.crawler.engine.close_spider(self, "max_pages_reached")
@@ -200,7 +221,7 @@ class RecursiveLeadSpider(scrapy.Spider):
         original_url = response.meta.get("original_url") or response.url
         discovery_source = response.meta.get("discovery_source_url")
 
-        # 3. Domain page limit check
+        # 4. Domain page limit check
         page_domain = normalize_domain(response.url)
         current_domain_count = self.domain_page_counts.get(page_domain, 0)
         if current_domain_count >= self.max_pages_per_domain:
@@ -210,11 +231,11 @@ class RecursiveLeadSpider(scrapy.Spider):
         self.domain_page_counts[page_domain] = current_domain_count + 1
         self.pages_crawled_count += 1
 
-        # 4. Extract structured content using existing parse_html_data from scraper.py
+        # 5. Extract structured content using existing parse_html_data from scraper.py
         html_content = response.text
         parsed = parse_html_data(html_content, base_url=response.url)
 
-        # 5. Yield CrawledPageItem
+        # 6. Yield CrawledPageItem
         now_str = datetime.datetime.now(timezone.utc).isoformat()
         item = CrawledPageItem(
             job_id=self.job_id,
@@ -235,7 +256,7 @@ class RecursiveLeadSpider(scrapy.Spider):
         )
         yield item
 
-        # 6. Recursive link discovery (if depth < max_depth)
+        # 7. Recursive link and document discovery (if depth < max_depth)
         if current_depth < self.max_depth:
             discovered_batch_count = 0
             for link_item in parsed["links"]:
@@ -257,17 +278,88 @@ class RecursiveLeadSpider(scrapy.Spider):
                     self.discovered_urls.add(norm_link)
                     discovered_batch_count += 1
 
-                yield scrapy.Request(
-                    url=norm_link,
-                    callback=self.parse,
-                    errback=self.errback,
-                    meta={
-                        "depth": current_depth + 1,
-                        "discovery_source_url": response.url,
-                        "original_url": norm_link,
-                    },
-                    dont_filter=False,  # Let Scrapy dupefilter handle duplicate requests
+                # Prioritize links likely to contain customer references, case studies, or stories
+                lower_link = norm_link.lower()
+                lower_text = (link_item.text or "").lower()
+                customer_kw = (
+                    "customer", "client", "case-stud", "case_stud", "success-stor",
+                    "success_stor", "reference", "testimonial", "portfolio", "stories",
+                    "our-work", "our_work", "users", "report", "brochure", "whitepaper",
                 )
+                link_priority = 0
+                if self.target_product and self.target_product.lower() in lower_link:
+                    link_priority = 25
+                elif any(k in lower_link or k in lower_text for k in customer_kw):
+                    link_priority = 10
+                elif any(k in lower_link for k in ("partner", "alliance", "solutions")):
+                    link_priority = 5
+
+                # Route documents & media to parse_document
+                link_path = urlparse(norm_link).path.lower()
+                is_resource = any(link_path.endswith(ext) for ext in RESOURCE_EXTENSIONS)
+
+                if is_resource:
+                    yield scrapy.Request(
+                        url=norm_link,
+                        callback=self.parse_document,
+                        errback=self.document_errback,
+                        priority=link_priority + 5,
+                        meta={
+                            "depth": current_depth + 1,
+                            "discovery_source_url": response.url,
+                            "original_url": norm_link,
+                            "is_document": True,
+                        },
+                        dont_filter=False,
+                    )
+                else:
+                    yield scrapy.Request(
+                        url=norm_link,
+                        callback=self.parse,
+                        errback=self.errback,
+                        priority=link_priority,
+                        meta={
+                            "depth": current_depth + 1,
+                            "discovery_source_url": response.url,
+                            "original_url": norm_link,
+                        },
+                        dont_filter=False,
+                    )
+
+            # Discover relevant images in <img> tags
+            try:
+                soup = BeautifulSoup(html_content, "lxml")
+                for img_tag in soup.find_all("img", src=True):
+                    src = img_tag.get("src", "").strip()
+                    if not src or src.startswith("data:"):
+                        continue
+                    resolved_img = normalize_crawl_url(urljoin(response.url, src))
+                    if not resolved_img:
+                        continue
+                    img_path = urlparse(resolved_img).path.lower()
+                    if any(img_path.endswith(ext) for ext in IMAGE_EXTENSIONS):
+                        alt = (img_tag.get("alt") or "").lower()
+                        img_kw = ("customer", "client", "case", "study", "report", "diagram", "cert", "partner", "testimonial")
+                        if any(k in img_path or k in alt for k in img_kw):
+                            if resolved_img not in self.discovered_urls:
+                                img_domain = normalize_domain(resolved_img)
+                                if self.is_domain_allowed(img_domain):
+                                    self.discovered_urls.add(resolved_img)
+                                    discovered_batch_count += 1
+                                    yield scrapy.Request(
+                                        url=resolved_img,
+                                        callback=self.parse_document,
+                                        errback=self.document_errback,
+                                        priority=5,
+                                        meta={
+                                            "depth": current_depth + 1,
+                                            "discovery_source_url": response.url,
+                                            "original_url": resolved_img,
+                                            "is_document": True,
+                                        },
+                                    )
+            except Exception as e:
+                logger.debug("Image link discovery non-fatal error: %s", e)
 
             if discovered_batch_count > 0:
                 database.increment_crawl_job_progress(
@@ -275,6 +367,114 @@ class RecursiveLeadSpider(scrapy.Spider):
                     discovered_inc=discovered_batch_count,
                     db_path=self.db_path,
                 )
+
+    def parse_document(self, response: Response):
+        """Parse binary document/media response and yield DiscoveredDocumentItem."""
+        url = response.url
+        original_url = response.meta.get("original_url") or url
+        discovery_source = response.meta.get("discovery_source_url")
+
+        parsed_url = urlparse(url)
+        raw_filename = os.path.basename(parsed_url.path) or "document"
+        content_type = response.headers.get(b"Content-Type", b"").decode("utf-8", errors="ignore").split(";")[0].strip().lower()
+
+        body = response.body or b""
+        file_size = len(body)
+        ext = os.path.splitext(raw_filename)[1].lower()
+
+        # Enforce 25 MB safety limit
+        if file_size > 25 * 1024 * 1024:
+            item = DiscoveredDocumentItem(
+                job_id=self.job_id,
+                source_page_url=discovery_source,
+                document_url=original_url,
+                file_name=raw_filename,
+                file_format=ext.lstrip(".").upper() or "UNKNOWN",
+                content_type=content_type,
+                file_size_bytes=file_size,
+                download_status="FAILED",
+                extraction_status="FAILED",
+                error_message="Document exceeds 25 MB safety limit",
+                extracted_text=None,
+                metadata_json=None,
+                sections_json=None,
+                retrieved_at=datetime.datetime.now(timezone.utc).isoformat(),
+            )
+            yield item
+            return
+
+        try:
+            parsed_doc = parse_document_content(
+                content_bytes=body,
+                filename=raw_filename,
+                declared_content_type=content_type,
+            )
+
+            item = DiscoveredDocumentItem(
+                job_id=self.job_id,
+                source_page_url=discovery_source,
+                document_url=original_url,
+                file_name=raw_filename,
+                file_format=parsed_doc.get("file_format", "UNKNOWN"),
+                content_type=content_type,
+                file_size_bytes=file_size,
+                download_status="DOWNLOADED",
+                extraction_status=parsed_doc.get("status", "SUCCESS"),
+                error_message=parsed_doc.get("error_message"),
+                extracted_text=parsed_doc.get("extracted_text"),
+                metadata_json=json.dumps(parsed_doc.get("metadata", {}), ensure_ascii=False),
+                sections_json=json.dumps(parsed_doc.get("sections", []), ensure_ascii=False),
+                retrieved_at=datetime.datetime.now(timezone.utc).isoformat(),
+            )
+            yield item
+        except Exception as e:
+            logger.error("Failed to parse document %s: %s", url, e)
+            item = DiscoveredDocumentItem(
+                job_id=self.job_id,
+                source_page_url=discovery_source,
+                document_url=original_url,
+                file_name=raw_filename,
+                file_format=ext.lstrip(".").upper() or "UNKNOWN",
+                content_type=content_type,
+                file_size_bytes=file_size,
+                download_status="DOWNLOADED",
+                extraction_status="FAILED",
+                error_message=f"Parser failure: {e}",
+                extracted_text=None,
+                metadata_json=None,
+                sections_json=None,
+                retrieved_at=datetime.datetime.now(timezone.utc).isoformat(),
+            )
+            yield item
+
+    def document_errback(self, failure: Failure):
+        """Capture failed document requests and record failure item."""
+        request = failure.request
+        url = request.url if request else "Unknown URL"
+        discovery_source = request.meta.get("discovery_source_url") if request else None
+        error_msg = str(failure.value)
+        parsed_url = urlparse(url)
+        raw_filename = os.path.basename(parsed_url.path) or "document"
+        ext = os.path.splitext(raw_filename)[1].lower().lstrip(".")
+
+        logger.warning("Document download error on %s: %s", url, error_msg)
+        item = DiscoveredDocumentItem(
+            job_id=self.job_id,
+            source_page_url=discovery_source,
+            document_url=url,
+            file_name=raw_filename,
+            file_format=ext.upper() or "UNKNOWN",
+            content_type=None,
+            file_size_bytes=0,
+            download_status="FAILED",
+            extraction_status="NOT_ATTEMPTED",
+            error_message=error_msg,
+            extracted_text=None,
+            metadata_json=None,
+            sections_json=None,
+            retrieved_at=datetime.datetime.now(timezone.utc).isoformat(),
+        )
+        yield item
 
     def parse_sitemap(self, response: Response):
         """Parse sitemap.xml to seed discovered URLs within domain."""

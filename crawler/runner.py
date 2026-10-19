@@ -61,6 +61,8 @@ def run_job(job_id: int, db_path: str | None = None) -> int:
             workflow=job.workflow.value,
             company_id=job.company_id,
             db_path=db_path,
+            target_product=getattr(job, "target_product", None),
+            objective=getattr(job, "objective", None),
         )
         process.start()  # Blocks until spider finishes
 
@@ -87,6 +89,15 @@ def run_job(job_id: int, db_path: str | None = None) -> int:
             final_outcome=final_outcome,
             db_path=db_path,
         )
+
+        # Run Customer Candidate Discovery and Verification on all crawled pages
+        try:
+            from candidate_verifier import verify_all_candidates_for_job
+            verified = verify_all_candidates_for_job(job_id, db_path=db_path)
+            logger.info("Candidate verification completed for Job #%d: %d candidates found.", job_id, len(verified))
+        except Exception as e:
+            logger.error("Candidate verification failed for Job #%d: %s", job_id, e)
+
         return 0
 
     except Exception as e:
@@ -102,6 +113,13 @@ def run_job(job_id: int, db_path: str | None = None) -> int:
             final_outcome="FAILED",
             db_path=db_path,
         )
+
+        try:
+            from candidate_verifier import verify_all_candidates_for_job
+            verify_all_candidates_for_job(job_id, db_path=db_path)
+        except Exception:
+            pass
+
         return 1
 
 

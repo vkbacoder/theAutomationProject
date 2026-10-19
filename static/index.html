@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Web Research &amp; Data Extraction - Unified Platform</title>
-  <meta name="description" content="Unified web research and data extraction platform combining single-page extraction and recursive Scrapy crawling.">
+  <title>AI Web Research &amp; Lead Intelligence Platform</title>
+  <meta name="description" content="Autonomous recursive website crawling, lead qualification, entity discovery, and evidence extraction platform.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,10 +15,10 @@
   <header class="app-header">
     <div class="header-container">
       <div class="logo-group">
-        <div class="logo-icon">⚡</div>
+        <div class="logo-icon">🕷️</div>
         <div class="logo-text">
-          <span class="logo-title">AI Web Research &amp; Data Extraction</span>
-          <span class="logo-subtitle">Unified Single-Page &amp; Recursive Intelligence Engine • Web Scraper Test Suite</span>
+          <span class="logo-title">AI Lead Research &amp; Web Intelligence</span>
+          <span class="logo-subtitle">Recursive Website Crawling • Entity Verification • Document Intelligence</span>
         </div>
       </div>
       <div class="header-status">
@@ -40,30 +40,17 @@
 
     <!-- Unified Research Control Card -->
     <section class="card input-card" id="unified-control-card">
-      <form id="unified-research-form" class="scraper-form" onsubmit="return false;">
-        <!-- Mode Selector -->
-        <div class="form-mode-container">
-          <span class="mode-label">Research Mode:</span>
-          <div class="segmented-control" role="radiogroup" aria-label="Research Mode">
-            <button type="button" class="segment-btn active" id="mode-single" data-mode="single" role="radio" aria-checked="true">
-              ⚡ Current Page (Scrape Website)
-            </button>
-            <button type="button" class="segment-btn" id="mode-crawl" data-mode="crawl" role="radio" aria-checked="false">
-              🕷️ Website Crawl (Recursive)
-            </button>
-          </div>
-        </div>
-
+      <form id="unified-research-form" class="scraper-form" novalidate>
         <!-- Primary URL Input Row -->
         <div class="input-wrapper">
-          <label for="url-input" class="input-label" id="url-input-label">Target Website URL</label>
+          <label for="url-input" class="input-label" id="url-input-label">Target Website Seed URL</label>
           <div class="input-group">
-            <span class="input-prefix" id="url-icon">🔗</span>
+            <span class="input-prefix" id="url-icon">🕷️</span>
             <input 
               type="url" 
               id="url-input" 
               class="url-input" 
-              placeholder="https://cooperatives.gov.in/" 
+              placeholder="https://quotes.toscrape.com/" 
               required 
               autocomplete="off"
               spellcheck="false"
@@ -73,13 +60,13 @@
             </button>
             <button type="submit" id="btn-start-research" class="btn btn-primary">
               <span class="btn-spinner" id="research-spinner"></span>
-              <span class="btn-text" id="research-btn-text">🚀 Start Research</span>
+              <span class="btn-text" id="research-btn-text">🕷️ Start Website Crawl</span>
             </button>
           </div>
         </div>
 
-        <!-- Recursive Crawl Parameters (Shown only when Website Crawl mode is active) -->
-        <div id="crawl-params-panel" class="crawl-form-grid hidden">
+        <!-- Recursive Crawl Parameters (Always Visible) -->
+        <div id="crawl-params-panel" class="crawl-form-grid">
           <div class="form-field-group">
             <label for="crawl-workflow">Workflow Context</label>
             <select id="crawl-workflow" class="form-select">
@@ -89,8 +76,16 @@
             </select>
           </div>
           <div class="form-field-group">
-            <label for="crawl-company-name">Company / Entity Name (Optional)</label>
-            <input type="text" id="crawl-company-name" class="form-text-input" placeholder="e.g. Ministry of Cooperation" />
+            <label for="crawl-company-name">Target Company Name (Optional)</label>
+            <input type="text" id="crawl-company-name" class="form-text-input" placeholder="e.g. Jedox" />
+          </div>
+          <div class="form-field-group">
+            <label for="crawl-objective">Research Objective</label>
+            <input type="text" id="crawl-objective" class="form-text-input" placeholder="e.g. Find customers using Jedox" />
+          </div>
+          <div class="form-field-group">
+            <label for="crawl-target-product">Target Product</label>
+            <input type="text" id="crawl-target-product" class="form-text-input" placeholder="e.g. Jedox" />
           </div>
           <div class="form-field-group">
             <label for="crawl-max-depth">Max Depth</label>
@@ -106,12 +101,21 @@
           </div>
         </div>
 
-        <!-- Quick Presets -->
+        <!-- Quick Presets & Recent Jobs -->
         <div class="preset-group">
           <span class="preset-label">Test Presets:</span>
           <button type="button" class="preset-chip" data-url="https://cooperatives.gov.in/">https://cooperatives.gov.in/ (NCD)</button>
           <button type="button" class="preset-chip" data-url="https://quotes.toscrape.com/">https://quotes.toscrape.com/ (Sandbox)</button>
           <button type="button" class="preset-chip" data-url="https://example.com">https://example.com</button>
+        </div>
+
+        <!-- Recent Jobs Selector -->
+        <div class="recent-jobs-group">
+          <label for="select-recent-jobs" class="preset-label">Recent Jobs:</label>
+          <select id="select-recent-jobs" class="form-select select-recent-jobs">
+            <option value="">-- Load a Previous Job --</option>
+          </select>
+          <button type="button" id="btn-load-recent-job" class="btn btn-sm btn-secondary">📂 Load</button>
         </div>
       </form>
     </section>
@@ -130,20 +134,47 @@
     <section id="live-job-card" class="crawl-job-card hidden">
       <div class="crawl-job-header">
         <div class="crawl-job-title-group">
-          <span class="crawl-job-title" id="job-title-text">Crawl Job #<span id="job-display-id">-</span></span>
+          <span class="crawl-job-title" id="job-title-text">Recursive Crawl Job #</span>
+          <span class="crawl-job-id" id="job-display-id" style="font-family: var(--font-code); font-weight: 700; margin-right: 8px;">-</span>
           <span id="job-status-badge" class="badge badge-pending">PENDING</span>
         </div>
         <div class="crawl-job-actions">
           <button type="button" id="btn-cancel-crawl" class="btn btn-sm btn-danger-outline">✕ Cancel Crawl</button>
           <button type="button" id="btn-retry-crawl" class="btn btn-sm btn-secondary hidden">🔁 Retry Failed</button>
           <button type="button" id="btn-refresh-job" class="btn btn-sm btn-secondary">↻ Refresh Status</button>
+          <button type="button" id="btn-view-results" class="btn btn-sm btn-action">📊 View Results</button>
+        </div>
+      </div>
+
+      <!-- Live Job Metadata Sub-Bar -->
+      <div class="live-job-meta-row" id="live-job-meta-row">
+        <div class="meta-item">
+          <span class="meta-label">Seed URL:</span>
+          <a id="job-display-seed-url" href="#" target="_blank" rel="noopener noreferrer" class="table-link">-</a>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Timing:</span>
+          <span id="job-timing-info" class="meta-val">Started: - • Elapsed: 0s</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Status Update:</span>
+          <span id="job-last-updated" class="meta-val">Just now</span>
+        </div>
+      </div>
+
+      <!-- Live Job Outcome / Message Alert Box -->
+      <div id="job-outcome-banner" class="job-outcome-banner hidden">
+        <span class="alert-icon" id="job-outcome-icon">ℹ️</span>
+        <div class="alert-body">
+          <h4 class="alert-title" id="job-outcome-title" style="margin: 0; font-size: 0.95rem;">Crawl Status</h4>
+          <p class="alert-message" id="job-outcome-message" style="margin: 2px 0 0; font-size: 0.85rem;">-</p>
         </div>
       </div>
 
       <!-- Live Progress Bar -->
       <div class="progress-bar-container" id="crawl-progress-wrapper">
         <div class="progress-bar-fill" id="crawl-progress-fill" style="width: 0%;"></div>
-        <span class="progress-text" id="crawl-progress-text">0 / 20 Pages Crawled</span>
+        <span class="progress-text" id="crawl-progress-text">0 / 20 Pages Crawled (0% of page limit)</span>
       </div>
 
       <!-- High-Level Counter Boxes -->
@@ -161,8 +192,8 @@
           <span class="crawl-stat-label">Failed Requests</span>
         </div>
         <div class="crawl-stat-box">
-          <span class="crawl-stat-value" id="job-max-depth">2</span>
-          <span class="crawl-stat-label">Max Depth</span>
+          <span class="crawl-stat-value" id="job-max-depth">0 / 2</span>
+          <span class="crawl-stat-label">Depth (Cur / Max)</span>
         </div>
       </div>
 
@@ -219,86 +250,446 @@
       </div>
     </section>
 
-    <!-- Cooperative Intelligence Callout -->
-    <section id="coop-intelligence-section" class="card coop-callout-card hidden">
-      <div class="coop-callout-header">
-        <div class="coop-callout-title-group">
-          <span class="coop-icon">🏛️</span>
-          <div>
-            <h3 class="coop-callout-title">Cooperative Data Findings &amp; Entity Extraction Status</h3>
-            <span class="coop-stage-badge">Status: Unstructured Text &amp; Directory Links Active</span>
+    <!-- Intelligence Results Platform (9 Organized Sections) -->
+    <section id="intel-workspace-section" class="results-section hidden">
+      <div class="card intel-workspace-card">
+        <!-- Dashboard Header & Top Actions -->
+        <div class="intel-header-row">
+          <div class="intel-title-group">
+            <h2>🧠 Research &amp; Document Intelligence Engine</h2>
+            <span class="links-counter" id="intel-job-indicator">Job Results</span>
           </div>
-        </div>
-        <span class="coop-notice-tag">Notice: Entity Normalization in Progress</span>
-      </div>
-      <p class="coop-callout-desc">
-        The current crawler and scraper engines capture full-page textual content, tabular HTML data, and discovered links. Automated normalization into discrete individual cooperative registry records (e.g. member rosters, registration certificates) is currently in development. Discovered datasets, state coverage tables, and directories from the current session are indexed below:
-      </p>
-      <div id="coop-detected-chips" class="coop-chips-container">
-        <!-- Dynamically populated based on extracted data -->
-      </div>
-    </section>
-
-    <!-- Full Results Workspace -->
-    <section id="workspace-section" class="results-section hidden">
-      <div class="card workspace-card">
-        <!-- Workspace Header & Filters -->
-        <div class="workspace-header">
-          <div class="workspace-title-group">
-            <h2 class="workspace-title">Extracted Workspace Pages</h2>
-            <span class="links-counter" id="workspace-results-count">Showing 0 pages</span>
-          </div>
-          <div class="workspace-actions">
-            <button type="button" id="btn-export-csv" class="btn btn-action" title="Export current results as CSV">
-              📥 Export CSV
+          <div class="intel-actions">
+            <button type="button" id="btn-reverify-candidates" class="btn btn-secondary" title="Re-run entity discovery and multi-claim verification">
+              ⚡ Re-Verify All Findings
             </button>
-            <button type="button" id="btn-export-json" class="btn btn-action" title="Export current results as JSON">
-              💾 Export JSON
+            <button type="button" id="btn-export-excel" class="btn btn-action" title="Export complete multi-dataset findings to Excel">
+              📊 Export Excel (.xlsx)
+            </button>
+            <button type="button" id="btn-export-csv-dataset" class="btn btn-action" title="Export findings to CSV archive">
+              📁 Export CSV (.zip)
             </button>
           </div>
         </div>
 
-        <!-- Search & Filter Controls -->
-        <div class="workspace-toolbar">
-          <div class="search-input-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="workspace-search-input" class="search-input" placeholder="Filter by Title, URL, or Text Content..." />
+        <!-- KPI Quick Counters Grid -->
+        <div class="intel-kpis-grid">
+          <div class="intel-kpi-card kpi-success">
+            <span class="intel-kpi-value" id="kpi-confirmed-companies">0</span>
+            <span class="intel-kpi-label">Confirmed Companies</span>
           </div>
-          <div class="filter-controls">
-            <select id="workspace-status-filter" class="form-select filter-select">
-              <option value="ALL">All Statuses</option>
-              <option value="SUCCESS">Success Only (200)</option>
-              <option value="FAILED">Failed / Errors Only</option>
-            </select>
-            <select id="workspace-sort-select" class="form-select filter-select">
-              <option value="DEFAULT">Order: Default</option>
-              <option value="WORDS_DESC">Word Count: High → Low</option>
-              <option value="DEPTH_ASC">Depth: Low → High</option>
-              <option value="TITLE_ASC">Title: A → Z</option>
-            </select>
+          <div class="intel-kpi-card kpi-warning">
+            <span class="intel-kpi-value" id="kpi-partial-companies">0</span>
+            <span class="intel-kpi-label">Partially Verified</span>
+          </div>
+          <div class="intel-kpi-card">
+            <span class="intel-kpi-value" id="kpi-unverified-companies">0</span>
+            <span class="intel-kpi-label">Unverified / Other</span>
+          </div>
+          <div class="intel-kpi-card kpi-primary">
+            <span class="intel-kpi-value" id="kpi-decision-makers">0</span>
+            <span class="intel-kpi-label">Decision-Makers</span>
+          </div>
+          <div class="intel-kpi-card kpi-success">
+            <span class="intel-kpi-value" id="kpi-public-contacts">0</span>
+            <span class="intel-kpi-label">Public Contacts</span>
+          </div>
+          <div class="intel-kpi-card">
+            <span class="intel-kpi-value" id="kpi-documents-processed">0</span>
+            <span class="intel-kpi-label">Documents Processed</span>
+          </div>
+          <div class="intel-kpi-card kpi-danger">
+            <span class="intel-kpi-value" id="kpi-failures-logged">0</span>
+            <span class="intel-kpi-label">Failures / Incomplete</span>
+          </div>
+          <div class="intel-kpi-card kpi-primary">
+            <span class="intel-kpi-value" id="kpi-evidence-count">0</span>
+            <span class="intel-kpi-label">Evidence Citations</span>
           </div>
         </div>
 
-        <!-- Results Table -->
-        <div class="table-responsive">
-          <table class="data-table" id="workspace-table">
-            <thead>
-              <tr>
-                <th style="width: 7%;">Depth</th>
-                <th style="width: 38%;">Page Title &amp; Source URL</th>
-                <th style="width: 10%;">HTTP Status</th>
-                <th style="width: 10%;">Extraction</th>
-                <th style="width: 10%;">Word Count</th>
-                <th style="width: 10%;">Evidence ID</th>
-                <th style="width: 15%; text-align: center;">Action</th>
-              </tr>
-            </thead>
-            <tbody id="workspace-tbody">
-              <tr>
-                <td colspan="7" class="empty-state">No research data available yet. Start research above to populate this workspace.</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- 10 Navigation Tabs -->
+        <div class="intel-tabs-bar" role="tablist">
+          <button type="button" class="intel-tab-btn active" data-target="panel-overview">📋 Overview</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-companies">🏢 1. Discovered Companies (<span id="tab-count-companies">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-rel-evidence">🤝 2. Relationship Evidence (<span id="tab-count-rel">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-usage-evidence">🎯 3. Product Usage Evidence (<span id="tab-count-usage">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-decision-makers">👥 4. Decision-Makers (<span id="tab-count-dms">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-contacts">📫 5. Public Contacts (<span id="tab-count-contacts">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-documents">📑 6. Documents &amp; Media (<span id="tab-count-docs">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-unified-evidence">🛡️ 7. Source Evidence Audit (<span id="tab-count-evidence">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-failures">⚠️ 8. Failures &amp; Incomplete Logs (<span id="tab-count-failures">0</span>)</button>
+          <button type="button" class="intel-tab-btn" data-target="panel-crawled-pages">🌐 9. Crawled Pages (<span id="tab-count-pages">0</span>)</button>
+        </div>
+
+        <!-- Tab 0: Overview -->
+        <div id="panel-overview" class="intel-tab-panel active">
+          <div class="overview-grid">
+            <div class="overview-card">
+              <h4 class="overview-card-title">🔍 Job &amp; Target Configuration</h4>
+              <table class="overview-table">
+                <tbody>
+                  <tr><th style="width: 35%;">Job Identifier</th><td><strong id="ov-job-id">-</strong></td></tr>
+                  <tr><th>Seed Website URL</th><td><a id="ov-seed-url" href="#" target="_blank" rel="noopener" class="table-link">-</a></td></tr>
+                  <tr><th>Workflow Context</th><td><span id="ov-workflow" class="badge badge-category">GENERAL</span></td></tr>
+                  <tr><th>Target Company</th><td id="ov-company-name">None specified</td></tr>
+                  <tr><th>Research Objective</th><td id="ov-objective">Standard Business Intelligence</td></tr>
+                  <tr><th>Target Product</th><td id="ov-target-product">None specified</td></tr>
+                  <tr><th>Crawl Boundaries</th><td id="ov-boundaries">Max Depth: 2 • Max Pages: 20 • Max/Domain: 20</td></tr>
+                  <tr><th>Status &amp; Stop Reason</th><td><span id="ov-status" class="badge badge-pending">PENDING</span> <span id="ov-stop-reason" style="margin-left: 8px; color: var(--text-muted);">-</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="overview-card">
+              <h4 class="overview-card-title">📈 Research Findings Summary</h4>
+              <div class="overview-kpis-grid">
+                <div class="ov-kpi-box">
+                  <span class="ov-kpi-val" id="ov-count-companies">0</span>
+                  <span class="ov-kpi-lbl">Companies Discovered</span>
+                </div>
+                <div class="ov-kpi-box highlight-success">
+                  <span class="ov-kpi-val" id="ov-count-rel-verified">0</span>
+                  <span class="ov-kpi-lbl">Customer Relationships</span>
+                </div>
+                <div class="ov-kpi-box highlight-primary">
+                  <span class="ov-kpi-val" id="ov-count-usage-verified">0</span>
+                  <span class="ov-kpi-lbl">Product-Usage Verified</span>
+                </div>
+                <div class="ov-kpi-box">
+                  <span class="ov-kpi-val" id="ov-count-dms">0</span>
+                  <span class="ov-kpi-lbl">Decision-Makers</span>
+                </div>
+                <div class="ov-kpi-box">
+                  <span class="ov-kpi-val" id="ov-count-contacts">0</span>
+                  <span class="ov-kpi-lbl">Public Contacts</span>
+                </div>
+                <div class="ov-kpi-box">
+                  <span class="ov-kpi-val" id="ov-count-docs">0</span>
+                  <span class="ov-kpi-lbl">Documents Ingested</span>
+                </div>
+                <div class="ov-kpi-box">
+                  <span class="ov-kpi-val" id="ov-count-pages">0</span>
+                  <span class="ov-kpi-lbl">Pages Crawled</span>
+                </div>
+                <div class="ov-kpi-box">
+                  <span class="ov-kpi-val" id="ov-count-evidence">0</span>
+                  <span class="ov-kpi-lbl">Evidence Citations</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 1: Discovered Companies -->
+        <div id="panel-companies" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-companies-search" class="search-input" placeholder="Search companies or keywords..." />
+            </div>
+            <div class="filter-controls">
+              <select id="filter-companies-classification" class="form-select filter-select">
+                <option value="ALL">All Classifications</option>
+                <option value="CONFIRMED">CONFIRMED (Both Claims Verified)</option>
+                <option value="PARTIALLY_VERIFIED">PARTIALLY_VERIFIED</option>
+                <option value="UNVERIFIED">UNVERIFIED</option>
+                <option value="RESEARCH_INCOMPLETE">RESEARCH_INCOMPLETE</option>
+              </select>
+              <select id="filter-companies-category" class="form-select filter-select">
+                <option value="ALL">All Categories</option>
+                <option value="NAMED_COMPANY">NAMED_COMPANY</option>
+                <option value="ANONYMOUS_CLIENT_DESCRIPTION">ANONYMOUS_CLIENT_DESCRIPTION</option>
+                <option value="PRODUCT_OR_TECHNOLOGY">PRODUCT_OR_TECHNOLOGY</option>
+                <option value="OTHER_ENTITY">OTHER_ENTITY</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 20%;">Company Candidate</th>
+                  <th style="width: 14%;">Entity Category</th>
+                  <th style="width: 15%;">Verification Status</th>
+                  <th style="width: 12%;">Relationship Type</th>
+                  <th style="width: 14%;">Target Product Usage</th>
+                  <th style="width: 17%;">Missing Evidence / Reason</th>
+                  <th style="width: 8%; text-align: center;">Sources</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-companies">
+                <tr><td colspan="7" class="empty-state">No company findings available yet. Start research above to discover companies.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Relationship Evidence -->
+        <div id="panel-rel-evidence" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-rel-search" class="search-input" placeholder="Search relationship claims..." />
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Associated Company</th>
+                  <th style="width: 25%;">Relationship Claim</th>
+                  <th style="width: 35%;">Exact Supporting Text Quote</th>
+                  <th style="width: 18%;">Source URL &amp; Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-rel-evidence">
+                <tr><td colspan="4" class="empty-state">No relationship evidence records available.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: Target Product Usage Evidence -->
+        <div id="panel-usage-evidence" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-usage-search" class="search-input" placeholder="Search product usage claims..." />
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 20%;">Company</th>
+                  <th style="width: 15%;">Target Product</th>
+                  <th style="width: 22%;">Product Usage Claim</th>
+                  <th style="width: 28%;">Supporting Evidence Quote</th>
+                  <th style="width: 15%;">Source URL</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-usage-evidence">
+                <tr><td colspan="5" class="empty-state">No product usage evidence records available.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 4: Decision-Makers & Roles -->
+        <div id="panel-decision-makers" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-dms-search" class="search-input" placeholder="Filter by Name, Title, or Company..." />
+            </div>
+            <div class="filter-controls">
+              <select id="filter-dms-role" class="form-select filter-select">
+                <option value="ALL">All Roles</option>
+                <option value="EXECUTIVE">Executive Leadership</option>
+                <option value="TECHNOLOGY_IT">Technology &amp; IT</option>
+                <option value="FINANCE_BUSINESS">Finance &amp; Business</option>
+                <option value="OPERATIONS">Operations</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 18%;">Full Name</th>
+                  <th style="width: 20%;">Published Job Title</th>
+                  <th style="width: 14%;">Role Category</th>
+                  <th style="width: 16%;">Associated Company</th>
+                  <th style="width: 18%;">Professional Relevance</th>
+                  <th style="width: 14%;">Source Citation</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-decision-makers">
+                <tr><td colspan="6" class="empty-state">No decision-maker profiles discovered yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 5: Public Professional Contacts -->
+        <div id="panel-contacts" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-contacts-search" class="search-input" placeholder="Search email, phone, or name..." />
+            </div>
+            <div class="filter-controls">
+              <select id="filter-contacts-type" class="form-select filter-select">
+                <option value="ALL">All Contact Types</option>
+                <option value="EMAIL">Email</option>
+                <option value="PHONE">Phone</option>
+                <option value="OFFICE_PHONE">Direct Office Phone</option>
+                <option value="LINKEDIN">LinkedIn Profile</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 14%;">Contact Type</th>
+                  <th style="width: 24%;">Contact Detail / Value</th>
+                  <th style="width: 16%;">Person Name</th>
+                  <th style="width: 16%;">Associated Company</th>
+                  <th style="width: 14%;">Verification</th>
+                  <th style="width: 16%;">Source / Quote</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-public-contacts">
+                <tr><td colspan="6" class="empty-state">No public professional contacts extracted yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 6: Documents & Media Processed -->
+        <div id="panel-documents" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-docs-search" class="search-input" placeholder="Search filename or format..." />
+            </div>
+            <div class="filter-controls">
+              <select id="filter-docs-format" class="form-select filter-select">
+                <option value="ALL">All Formats</option>
+                <option value="PDF">PDF</option>
+                <option value="XLSX">Excel (.xlsx)</option>
+                <option value="CSV">CSV</option>
+                <option value="DOCX">Word (.docx)</option>
+                <option value="PPTX">PowerPoint (.pptx)</option>
+                <option value="IMAGE">Images (PNG/JPG/WEBP)</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Filename</th>
+                  <th style="width: 10%;">Format</th>
+                  <th style="width: 12%;">Size</th>
+                  <th style="width: 14%;">Download Status</th>
+                  <th style="width: 15%;">Extraction Status</th>
+                  <th style="width: 24%;">Document URL &amp; Source</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-documents">
+                <tr><td colspan="6" class="empty-state">No linked documents or media discovered yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 7: Unified Source Evidence Audit -->
+        <div id="panel-unified-evidence" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-evidence-search" class="search-input" placeholder="Search evidence quotes or citations..." />
+            </div>
+            <div class="filter-controls">
+              <select id="filter-evidence-claim" class="form-select filter-select">
+                <option value="ALL">All Claim Types</option>
+                <option value="RELATIONSHIP">RELATIONSHIP</option>
+                <option value="PRODUCT_USAGE">PRODUCT_USAGE</option>
+                <option value="DECISION_MAKER">DECISION_MAKER</option>
+                <option value="CONTACT">CONTACT</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 12%;">Claim Type</th>
+                  <th style="width: 24%;">Claim Statement</th>
+                  <th style="width: 34%;">Exact Supporting Quote</th>
+                  <th style="width: 18%;">Source Location &amp; URL</th>
+                  <th style="width: 12%;">Audit Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-unified-evidence">
+                <tr><td colspan="5" class="empty-state">No unified evidence records compiled yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 8: Failures & Incomplete Logs -->
+        <div id="panel-failures" class="intel-tab-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Target Item / URL</th>
+                  <th style="width: 14%;">Resource Type</th>
+                  <th style="width: 34%;">Error Message / Reason</th>
+                  <th style="width: 15%;">Download Status</th>
+                  <th style="width: 15%;">Extraction Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-failures">
+                <tr><td colspan="5" class="empty-state">No failures or incomplete extraction logs recorded.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 9: Crawled Web Pages -->
+        <div id="panel-crawled-pages" class="intel-tab-panel">
+          <div class="workspace-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="workspace-search-input" class="search-input" placeholder="Filter by Title, URL, or Text Content..." />
+            </div>
+            <div class="filter-controls">
+              <select id="workspace-status-filter" class="form-select filter-select">
+                <option value="ALL">All Statuses</option>
+                <option value="SUCCESS">Success Only (200)</option>
+                <option value="FAILED">Failed / Errors Only</option>
+              </select>
+              <select id="workspace-sort-select" class="form-select filter-select">
+                <option value="DEFAULT">Order: Default</option>
+                <option value="WORDS_DESC">Word Count: High → Low</option>
+                <option value="DEPTH_ASC">Depth: Low → High</option>
+                <option value="TITLE_ASC">Title: A → Z</option>
+              </select>
+            </div>
+            <div class="workspace-actions">
+              <span class="links-counter" id="workspace-results-count">Showing 0 pages</span>
+              <button type="button" id="btn-export-csv" class="btn btn-sm btn-secondary" title="Export crawled pages to CSV">
+                📄 Export Pages CSV
+              </button>
+              <button type="button" id="btn-export-json" class="btn btn-sm btn-secondary" title="Export crawled pages to JSON">
+                💻 Export JSON
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="workspace-table">
+              <thead>
+                <tr>
+                  <th style="width: 7%;">Depth</th>
+                  <th style="width: 38%;">Page Title &amp; Source URL</th>
+                  <th style="width: 10%;">HTTP Status</th>
+                  <th style="width: 10%;">Extraction</th>
+                  <th style="width: 10%;">Word Count</th>
+                  <th style="width: 10%;">Evidence ID</th>
+                  <th style="width: 15%; text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="workspace-tbody">
+                <tr>
+                  <td colspan="7" class="empty-state">No research data available yet. Start research above to populate this workspace.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -410,10 +801,10 @@
   <!-- Footer -->
   <footer class="app-footer">
     <div class="footer-container">
-      <p>AI Lead Research &amp; Qualification System • Unified Web Intelligence Platform v1.2.0</p>
+      <p>AI Lead Research &amp; Qualification System • Web Scraper Test Suite • Scrape Website (Internal) &amp; Recursive Crawl Platform v1.2.0</p>
     </div>
   </footer>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=3.2.0"></script>
 </body>
 </html>

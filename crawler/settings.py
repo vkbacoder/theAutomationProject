@@ -27,7 +27,7 @@ AUTOTHROTTLE_DEBUG = False
 
 # Timeouts & Size limits
 DOWNLOAD_TIMEOUT = int(DEFAULT_TIMEOUT_SEC)
-DOWNLOAD_MAXSIZE = MAX_RESPONSE_BYTES  # 5 MB stream cutoff
+DOWNLOAD_MAXSIZE = 25 * 1024 * 1024  # 25 MB stream cutoff for documents & pages
 DOWNLOAD_WARNSIZE = 2 * 1024 * 1024     # 2 MB warning threshold
 REDIRECT_MAX_TIMES = MAX_REDIRECTS      # 5 redirects max
 

@@ -14,19 +14,32 @@ from typing import Any, Dict, List, Optional
 
 from dedup import is_fuzzy_name_match, normalize_company_name, normalize_domain
 from models import (
+    CandidateCategory,
+    CandidateClassification,
+    ClaimType,
     CompanyProfile,
+    ContactType,
+    ContactVerificationStatus,
     CrawlJob,
     CrawlJobMetrics,
     CrawlJobStatus,
     CrawlPage,
     CrawlPageStatus,
+    CustomerCandidate,
     DecisionMaker,
+    DiscoveredDocument,
+    EvidenceReference,
     FitLevel,
     LeadRecord,
+    PublicContact,
     QualificationScore,
+    RelationshipType,
     ResearchHistoryEntry,
     ResearchStatus,
+    RoleCategory,
     ScrapeEvidence,
+    UnifiedEvidence,
+    VerificationChecklist,
     VerificationStatus,
     WorkflowType,
 )
@@ -183,13 +196,141 @@ def init_db(db_path: Optional[str] = None) -> None:
 
             CREATE INDEX IF NOT EXISTS idx_crawl_pages_job ON crawl_pages(job_id);
             CREATE INDEX IF NOT EXISTS idx_crawl_pages_url ON crawl_pages(original_url);
+
+            CREATE TABLE IF NOT EXISTS customer_candidates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+                target_company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+                candidate_name TEXT NOT NULL,
+                normalized_name TEXT NOT NULL,
+                target_product TEXT NOT NULL DEFAULT 'Jedox',
+                relationship_type TEXT NOT NULL DEFAULT 'UNKNOWN',
+                classification TEXT NOT NULL DEFAULT 'UNVERIFIED',
+                product_usage_status TEXT NOT NULL DEFAULT 'UNVERIFIED',
+                checklist_json TEXT NOT NULL,
+                sources_json TEXT NOT NULL,
+                missing_evidence_reason TEXT,
+                research_status TEXT NOT NULL DEFAULT 'PENDING',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_candidates_job ON customer_candidates(job_id);
+            CREATE INDEX IF NOT EXISTS idx_candidates_target ON customer_candidates(target_company_id);
+            CREATE INDEX IF NOT EXISTS idx_candidates_classification ON customer_candidates(classification);
+
+            CREATE TABLE IF NOT EXISTS discovered_documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+                source_page_url TEXT NOT NULL,
+                document_url TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                file_format TEXT NOT NULL,
+                content_type TEXT,
+                file_size_bytes INTEGER DEFAULT 0,
+                download_status TEXT NOT NULL DEFAULT 'PENDING',
+                extraction_status TEXT NOT NULL DEFAULT 'PENDING',
+                error_message TEXT,
+                extracted_text TEXT,
+                metadata_json TEXT,
+                sections_json TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_disc_docs_job ON discovered_documents(job_id);
+            CREATE INDEX IF NOT EXISTS idx_disc_docs_url ON discovered_documents(document_url);
+
+            CREATE TABLE IF NOT EXISTS decision_makers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+                target_company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+                candidate_company_id INTEGER REFERENCES customer_candidates(id) ON DELETE SET NULL,
+                company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+                name TEXT NOT NULL,
+                normalized_name TEXT,
+                title TEXT,
+                department TEXT,
+                role_category TEXT NOT NULL DEFAULT 'OTHER',
+                associated_company TEXT,
+                professional_relevance TEXT,
+                email TEXT,
+                phone TEXT,
+                linkedin_url TEXT,
+                source_url TEXT NOT NULL,
+                source_type TEXT NOT NULL DEFAULT 'HTML',
+                supporting_quote TEXT,
+                verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED',
+                created_at TEXT NOT NULL,
+                updated_at TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_dm_job ON decision_makers(job_id);
+            CREATE INDEX IF NOT EXISTS idx_dm_cand ON decision_makers(candidate_company_id);
+
+            CREATE TABLE IF NOT EXISTS public_contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+                person_id INTEGER REFERENCES decision_makers(id) ON DELETE SET NULL,
+                company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+                candidate_company_id INTEGER REFERENCES customer_candidates(id) ON DELETE SET NULL,
+                contact_type TEXT NOT NULL,
+                contact_value TEXT NOT NULL,
+                associated_person_name TEXT,
+                associated_job_title TEXT,
+                associated_company TEXT,
+                source_url TEXT NOT NULL,
+                source_type TEXT NOT NULL DEFAULT 'HTML',
+                file_name TEXT,
+                supporting_quote TEXT NOT NULL,
+                source_location TEXT,
+                verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED',
+                is_public INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_pc_job ON public_contacts(job_id);
+            CREATE INDEX IF NOT EXISTS idx_pc_val ON public_contacts(contact_value);
+
+            CREATE TABLE IF NOT EXISTS unified_evidence (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+                company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+                candidate_id INTEGER REFERENCES customer_candidates(id) ON DELETE SET NULL,
+                person_id INTEGER REFERENCES decision_makers(id) ON DELETE SET NULL,
+                claim_type TEXT NOT NULL,
+                claim_text TEXT NOT NULL,
+                source_url TEXT NOT NULL,
+                original_file_url TEXT,
+                source_format TEXT NOT NULL DEFAULT 'HTML',
+                file_name TEXT,
+                supporting_quote TEXT NOT NULL,
+                source_location TEXT,
+                extraction_status TEXT NOT NULL DEFAULT 'SUCCESS',
+                verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED',
+                created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_ue_job ON unified_evidence(job_id);
+            CREATE INDEX IF NOT EXISTS idx_ue_cand ON unified_evidence(candidate_id);
             """)
 
-            # Non-destructive migration check: ensure metrics_json column exists on crawl_jobs
+            # Non-destructive migration checks on crawl_jobs table
             cursor = conn.execute("PRAGMA table_info(crawl_jobs)")
             existing_cols = {row["name"] for row in cursor.fetchall()}
             if "metrics_json" not in existing_cols:
                 conn.execute("ALTER TABLE crawl_jobs ADD COLUMN metrics_json TEXT")
+            if "objective" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN objective TEXT")
+            if "target_product" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN target_product TEXT")
+
+            # Non-destructive migration check on customer_candidates table
+            cursor = conn.execute("PRAGMA table_info(customer_candidates)")
+            cand_cols = {row["name"] for row in cursor.fetchall()}
+            if "candidate_category" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN candidate_category TEXT DEFAULT 'NAMED_COMPANY'")
     finally:
         conn.close()
 
@@ -711,8 +852,8 @@ def create_crawl_job(job: CrawlJob, db_path: Optional[str] = None) -> CrawlJob:
                     company_name, status, cancellation_requested, max_depth,
                     max_pages, max_pages_per_domain, pages_crawled, pages_failed,
                     discovered_urls_count, created_at, started_at, finished_at,
-                    error_message, worker_pid, metrics_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    error_message, worker_pid, metrics_json, objective, target_product
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     job.seed_url,
@@ -734,6 +875,8 @@ def create_crawl_job(job: CrawlJob, db_path: Optional[str] = None) -> CrawlJob:
                     job.error_message,
                     job.worker_pid,
                     metrics_raw,
+                    job.objective,
+                    job.target_product,
                 ),
             )
             job.id = cursor.lastrowid
@@ -1028,12 +1171,16 @@ def _row_to_crawl_job(row: sqlite3.Row) -> CrawlJob:
 
     metrics_json_str = None
     metrics_obj = None
-    if "metrics_json" in row.keys() and row["metrics_json"]:
+    row_keys = row.keys()
+    if "metrics_json" in row_keys and row["metrics_json"]:
         metrics_json_str = row["metrics_json"]
         try:
             metrics_obj = CrawlJobMetrics.model_validate_json(metrics_json_str)
         except Exception:
             pass
+
+    objective = row["objective"] if "objective" in row_keys else None
+    target_product = row["target_product"] if "target_product" in row_keys else None
 
     return CrawlJob(
         id=row["id"],
@@ -1042,6 +1189,8 @@ def _row_to_crawl_job(row: sqlite3.Row) -> CrawlJob:
         workflow=WorkflowType(row["workflow"]),
         company_id=row["company_id"],
         company_name=row["company_name"],
+        objective=objective,
+        target_product=target_product,
         status=CrawlJobStatus(row["status"]),
         cancellation_requested=bool(row["cancellation_requested"]),
         max_depth=row["max_depth"],
@@ -1244,4 +1393,809 @@ def _row_to_crawl_page(row: sqlite3.Row) -> CrawlPage:
         evidence_id=row["evidence_id"],
         retrieved_at=row["retrieved_at"],
     )
+
+
+# -------------------------------------------------------------
+# Customer Candidates Persistence & Queries
+# -------------------------------------------------------------
+
+def save_customer_candidate(
+    candidate: CustomerCandidate, db_path: Optional[str] = None
+) -> CustomerCandidate:
+    """Insert or update a customer candidate record in SQLite."""
+    conn = get_connection(db_path)
+    try:
+        with conn:
+            checklist_json = candidate.checklist.model_dump_json()
+            sources_json = json.dumps([s.model_dump() for s in candidate.sources])
+            cand_cat = getattr(candidate, "candidate_category", CandidateCategory.NAMED_COMPANY)
+            cat_val = cand_cat.value if hasattr(cand_cat, "value") else str(cand_cat)
+
+            if candidate.id:
+                conn.execute(
+                    """
+                    UPDATE customer_candidates
+                    SET job_id = ?, target_company_id = ?, candidate_name = ?,
+                        normalized_name = ?, target_product = ?, relationship_type = ?,
+                        classification = ?, candidate_category = ?, product_usage_status = ?, checklist_json = ?,
+                        sources_json = ?, missing_evidence_reason = ?, research_status = ?,
+                        updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        candidate.job_id,
+                        candidate.target_company_id,
+                        candidate.candidate_name,
+                        candidate.normalized_name,
+                        candidate.target_product,
+                        candidate.relationship_type.value,
+                        candidate.classification.value,
+                        cat_val,
+                        candidate.product_usage_status,
+                        checklist_json,
+                        sources_json,
+                        candidate.missing_evidence_reason,
+                        candidate.research_status,
+                        candidate.updated_at,
+                        candidate.id,
+                    ),
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO customer_candidates (
+                        job_id, target_company_id, candidate_name, normalized_name,
+                        target_product, relationship_type, classification, candidate_category,
+                        product_usage_status, checklist_json, sources_json,
+                        missing_evidence_reason, research_status, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        candidate.job_id,
+                        candidate.target_company_id,
+                        candidate.candidate_name,
+                        candidate.normalized_name,
+                        candidate.target_product,
+                        candidate.relationship_type.value,
+                        candidate.classification.value,
+                        cat_val,
+                        candidate.product_usage_status,
+                        checklist_json,
+                        sources_json,
+                        candidate.missing_evidence_reason,
+                        candidate.research_status,
+                        candidate.created_at,
+                        candidate.updated_at,
+                    ),
+                )
+                candidate.id = cursor.lastrowid
+        return candidate
+    finally:
+        conn.close()
+
+
+def save_customer_candidates(
+    candidates: List[CustomerCandidate], db_path: Optional[str] = None
+) -> List[CustomerCandidate]:
+    """Persist multiple customer candidate records."""
+    return [save_customer_candidate(c, db_path=db_path) for c in candidates]
+
+
+def get_customer_candidates(
+    job_id: Optional[int] = None,
+    target_company_id: Optional[int] = None,
+    classification: Optional[CandidateClassification] = None,
+    relationship_type: Optional[RelationshipType] = None,
+    candidate_category: Optional[CandidateCategory] = None,
+    limit: int = 200,
+    offset: int = 0,
+    db_path: Optional[str] = None,
+) -> List[CustomerCandidate]:
+    """Retrieve customer candidates with optional filters."""
+    conn = get_connection(db_path)
+    try:
+        query = "SELECT * FROM customer_candidates WHERE 1=1"
+        params: List[Any] = []
+        if job_id is not None:
+            query += " AND job_id = ?"
+            params.append(job_id)
+        if target_company_id is not None:
+            query += " AND target_company_id = ?"
+            params.append(target_company_id)
+        if classification is not None:
+            query += " AND classification = ?"
+            params.append(classification.value)
+        if relationship_type is not None:
+            query += " AND relationship_type = ?"
+            params.append(relationship_type.value)
+        if candidate_category is not None:
+            query += " AND candidate_category = ?"
+            params.append(candidate_category.value)
+
+        query += " ORDER BY id ASC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        rows = conn.execute(query, params).fetchall()
+        return [_row_to_customer_candidate(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def get_candidate_by_id(
+    candidate_id: int, db_path: Optional[str] = None
+) -> Optional[CustomerCandidate]:
+    """Retrieve a single customer candidate by ID."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM customer_candidates WHERE id = ?", (candidate_id,)).fetchone()
+        if not row:
+            return None
+        return _row_to_customer_candidate(row)
+    finally:
+        conn.close()
+
+
+def _row_to_customer_candidate(row: sqlite3.Row) -> CustomerCandidate:
+    """Convert SQLite row to CustomerCandidate model."""
+    checklist_obj = VerificationChecklist()
+    if row["checklist_json"]:
+        try:
+            checklist_obj = VerificationChecklist.model_validate_json(row["checklist_json"])
+        except Exception:
+            pass
+
+    sources_list: List[EvidenceReference] = []
+    if row["sources_json"]:
+        try:
+            raw_sources = json.loads(row["sources_json"])
+            sources_list = [EvidenceReference.model_validate(s) for s in raw_sources]
+        except Exception:
+            pass
+
+    cat_val = CandidateCategory.NAMED_COMPANY
+    if "candidate_category" in row.keys() and row["candidate_category"]:
+        try:
+            cat_val = CandidateCategory(row["candidate_category"])
+        except Exception:
+            pass
+
+    return CustomerCandidate(
+        id=row["id"],
+        job_id=row["job_id"],
+        target_company_id=row["target_company_id"],
+        candidate_name=row["candidate_name"],
+        normalized_name=row["normalized_name"],
+        target_product=row["target_product"] or "Jedox",
+        relationship_type=RelationshipType(row["relationship_type"]),
+        classification=CandidateClassification(row["classification"]),
+        candidate_category=cat_val,
+        checklist=checklist_obj,
+        product_usage_status=row["product_usage_status"] or "UNVERIFIED",
+        sources=sources_list,
+        missing_evidence_reason=row["missing_evidence_reason"],
+        research_status=row["research_status"] or "PENDING",
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+# -------------------------------------------------------------
+# Discovered Documents Persistence & Queries
+# -------------------------------------------------------------
+
+def save_discovered_document(
+    doc: DiscoveredDocument, db_path: Optional[str] = None
+) -> DiscoveredDocument:
+    """Insert or update a discovered document record."""
+    conn = get_connection(db_path)
+    try:
+        with conn:
+            meta_json = json.dumps(doc.metadata_json) if doc.metadata_json else None
+            sec_json = json.dumps(doc.sections_json) if doc.sections_json else None
+
+            if doc.id:
+                conn.execute(
+                    """
+                    UPDATE discovered_documents
+                    SET download_status = ?, extraction_status = ?, error_message = ?,
+                        extracted_text = ?, metadata_json = ?, sections_json = ?,
+                        file_size_bytes = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        doc.download_status,
+                        doc.extraction_status,
+                        doc.error_message,
+                        doc.extracted_text,
+                        meta_json,
+                        sec_json,
+                        doc.file_size_bytes,
+                        doc.updated_at,
+                        doc.id,
+                    ),
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO discovered_documents (
+                        job_id, source_page_url, document_url, file_name, file_format,
+                        content_type, file_size_bytes, download_status, extraction_status,
+                        error_message, extracted_text, metadata_json, sections_json,
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        doc.job_id,
+                        doc.source_page_url,
+                        doc.document_url,
+                        doc.file_name,
+                        doc.file_format,
+                        doc.content_type,
+                        doc.file_size_bytes,
+                        doc.download_status,
+                        doc.extraction_status,
+                        doc.error_message,
+                        doc.extracted_text,
+                        meta_json,
+                        sec_json,
+                        doc.created_at,
+                        doc.updated_at,
+                    ),
+                )
+                doc.id = cursor.lastrowid
+        return doc
+    finally:
+        conn.close()
+
+
+def save_discovered_documents(
+    docs: List[DiscoveredDocument], db_path: Optional[str] = None
+) -> List[DiscoveredDocument]:
+    """Persist multiple discovered documents."""
+    return [save_discovered_document(d, db_path=db_path) for d in docs]
+
+
+def get_discovered_documents(
+    job_id: Optional[int] = None,
+    download_status: Optional[str] = None,
+    extraction_status: Optional[str] = None,
+    file_format: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
+    db_path: Optional[str] = None,
+) -> List[DiscoveredDocument]:
+    """Retrieve discovered documents for a job with optional status/format filters."""
+    conn = get_connection(db_path)
+    try:
+        query = "SELECT * FROM discovered_documents WHERE 1=1"
+        params: List[Any] = []
+        if job_id is not None:
+            query += " AND job_id = ?"
+            params.append(job_id)
+        if download_status is not None:
+            query += " AND download_status = ?"
+            params.append(download_status)
+        if extraction_status is not None:
+            query += " AND extraction_status = ?"
+            params.append(extraction_status)
+        if file_format is not None:
+            query += " AND file_format = ?"
+            params.append(file_format)
+
+        query += " ORDER BY id ASC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        rows = conn.execute(query, params).fetchall()
+        return [_row_to_discovered_document(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def get_discovered_document_by_id(
+    doc_id: int, db_path: Optional[str] = None
+) -> Optional[DiscoveredDocument]:
+    """Retrieve a single discovered document by ID."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM discovered_documents WHERE id = ?", (doc_id,)).fetchone()
+        if not row:
+            return None
+        return _row_to_discovered_document(row)
+    finally:
+        conn.close()
+
+
+def _row_to_discovered_document(row: sqlite3.Row) -> DiscoveredDocument:
+    meta = None
+    if row["metadata_json"]:
+        try:
+            meta = json.loads(row["metadata_json"])
+        except Exception:
+            pass
+    secs = None
+    if row["sections_json"]:
+        try:
+            secs = json.loads(row["sections_json"])
+        except Exception:
+            pass
+
+    return DiscoveredDocument(
+        id=row["id"],
+        job_id=row["job_id"],
+        source_page_url=row["source_page_url"],
+        document_url=row["document_url"],
+        file_name=row["file_name"],
+        file_format=row["file_format"],
+        content_type=row["content_type"],
+        file_size_bytes=row["file_size_bytes"] or 0,
+        download_status=row["download_status"],
+        extraction_status=row["extraction_status"],
+        error_message=row["error_message"],
+        extracted_text=row["extracted_text"],
+        metadata_json=meta,
+        sections_json=secs,
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+# -------------------------------------------------------------
+# Decision Makers Persistence & Queries
+# -------------------------------------------------------------
+
+def save_decision_maker(
+    dm: DecisionMaker, db_path: Optional[str] = None
+) -> DecisionMaker:
+    """Insert or update a decision maker record."""
+    conn = get_connection(db_path)
+    try:
+        with conn:
+            norm_name = dm.normalized_name or normalize_company_name(dm.name)
+            role_val = dm.role_category.value if hasattr(dm.role_category, "value") else str(dm.role_category)
+
+            if dm.id:
+                conn.execute(
+                    """
+                    UPDATE decision_makers
+                    SET job_id = ?, target_company_id = ?, candidate_company_id = ?,
+                        company_id = ?, name = ?, normalized_name = ?, title = ?,
+                        department = ?, role_category = ?, associated_company = ?,
+                        professional_relevance = ?, email = ?, phone = ?, linkedin_url = ?,
+                        source_url = ?, source_type = ?, supporting_quote = ?,
+                        verification_status = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        dm.job_id,
+                        dm.target_company_id,
+                        dm.candidate_company_id,
+                        dm.company_id,
+                        dm.name,
+                        norm_name,
+                        dm.title,
+                        dm.department,
+                        role_val,
+                        dm.associated_company,
+                        dm.professional_relevance,
+                        dm.email,
+                        dm.phone,
+                        dm.linkedin_url,
+                        dm.source_url,
+                        dm.source_type,
+                        dm.supporting_quote,
+                        dm.verification_status,
+                        dm.updated_at,
+                        dm.id,
+                    ),
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO decision_makers (
+                        job_id, target_company_id, candidate_company_id, company_id,
+                        name, normalized_name, title, department, role_category,
+                        associated_company, professional_relevance, email, phone,
+                        linkedin_url, source_url, source_type, supporting_quote,
+                        verification_status, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        dm.job_id,
+                        dm.target_company_id,
+                        dm.candidate_company_id,
+                        dm.company_id,
+                        dm.name,
+                        norm_name,
+                        dm.title,
+                        dm.department,
+                        role_val,
+                        dm.associated_company,
+                        dm.professional_relevance,
+                        dm.email,
+                        dm.phone,
+                        dm.linkedin_url,
+                        dm.source_url,
+                        dm.source_type,
+                        dm.supporting_quote,
+                        dm.verification_status,
+                        dm.created_at,
+                        dm.updated_at,
+                    ),
+                )
+                dm.id = cursor.lastrowid
+        return dm
+    finally:
+        conn.close()
+
+
+def save_decision_makers(
+    dms: List[DecisionMaker], db_path: Optional[str] = None
+) -> List[DecisionMaker]:
+    """Persist multiple decision makers."""
+    return [save_decision_maker(dm, db_path=db_path) for dm in dms]
+
+
+def get_decision_makers(
+    job_id: Optional[int] = None,
+    candidate_company_id: Optional[int] = None,
+    role_category: Optional[RoleCategory] = None,
+    company: Optional[str] = None,
+    verification_status: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
+    db_path: Optional[str] = None,
+) -> List[DecisionMaker]:
+    """Retrieve decision makers with optional filters."""
+    conn = get_connection(db_path)
+    try:
+        query = "SELECT * FROM decision_makers WHERE 1=1"
+        params: List[Any] = []
+        if job_id is not None:
+            query += " AND job_id = ?"
+            params.append(job_id)
+        if candidate_company_id is not None:
+            query += " AND candidate_company_id = ?"
+            params.append(candidate_company_id)
+        if role_category is not None:
+            query += " AND role_category = ?"
+            params.append(role_category.value)
+        if company:
+            query += " AND (associated_company LIKE ? OR candidate_company_id IN (SELECT id FROM customer_candidates WHERE candidate_name LIKE ?))"
+            params.extend([f"%{company}%", f"%{company}%"])
+        if verification_status is not None:
+            query += " AND verification_status = ?"
+            params.append(verification_status)
+
+        query += " ORDER BY id ASC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        rows = conn.execute(query, params).fetchall()
+        return [_row_to_decision_maker(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def get_decision_maker_by_id(
+    dm_id: int, db_path: Optional[str] = None
+) -> Optional[DecisionMaker]:
+    """Retrieve single decision maker by ID."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM decision_makers WHERE id = ?", (dm_id,)).fetchone()
+        if not row:
+            return None
+        return _row_to_decision_maker(row)
+    finally:
+        conn.close()
+
+
+def _row_to_decision_maker(row: sqlite3.Row) -> DecisionMaker:
+    role_cat = RoleCategory.OTHER
+    if "role_category" in row.keys() and row["role_category"]:
+        try:
+            role_cat = RoleCategory(row["role_category"])
+        except Exception:
+            pass
+
+    return DecisionMaker(
+        id=row["id"],
+        job_id=row["job_id"] if "job_id" in row.keys() else None,
+        company_id=row["company_id"],
+        target_company_id=row["target_company_id"] if "target_company_id" in row.keys() else None,
+        candidate_company_id=row["candidate_company_id"] if "candidate_company_id" in row.keys() else None,
+        name=row["name"],
+        normalized_name=row["normalized_name"] if "normalized_name" in row.keys() else None,
+        title=row["title"],
+        department=row["department"] if "department" in row.keys() else None,
+        role_category=role_cat,
+        associated_company=row["associated_company"] if "associated_company" in row.keys() else None,
+        professional_relevance=row["professional_relevance"] if "professional_relevance" in row.keys() else None,
+        email=row["email"],
+        phone=row["phone"],
+        linkedin_url=row["linkedin_url"],
+        source_url=row["source_url"],
+        source_type=row["source_type"] if "source_type" in row.keys() else "HTML",
+        supporting_quote=row["supporting_quote"] if "supporting_quote" in row.keys() else None,
+        verification_status=row["verification_status"] if "verification_status" in row.keys() else "UNVERIFIED",
+        created_at=row["created_at"],
+        updated_at=row["updated_at"] if "updated_at" in row.keys() else None,
+    )
+
+
+# -------------------------------------------------------------
+# Public Contacts Persistence & Queries
+# -------------------------------------------------------------
+
+def save_public_contact(
+    contact: PublicContact, db_path: Optional[str] = None
+) -> PublicContact:
+    """Insert or update a public contact record."""
+    conn = get_connection(db_path)
+    try:
+        with conn:
+            ctype_val = contact.contact_type.value if hasattr(contact.contact_type, "value") else str(contact.contact_type)
+            vstatus_val = contact.verification_status.value if hasattr(contact.verification_status, "value") else str(contact.verification_status)
+
+            if contact.id:
+                conn.execute(
+                    """
+                    UPDATE public_contacts
+                    SET job_id = ?, person_id = ?, company_id = ?, candidate_company_id = ?,
+                        contact_type = ?, contact_value = ?, associated_person_name = ?,
+                        associated_job_title = ?, associated_company = ?, source_url = ?,
+                        source_type = ?, file_name = ?, supporting_quote = ?, source_location = ?,
+                        verification_status = ?, is_public = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        contact.job_id,
+                        contact.person_id,
+                        contact.company_id,
+                        contact.candidate_company_id,
+                        ctype_val,
+                        contact.contact_value,
+                        contact.associated_person_name,
+                        contact.associated_job_title,
+                        contact.associated_company,
+                        contact.source_url,
+                        contact.source_type,
+                        contact.file_name,
+                        contact.supporting_quote,
+                        contact.source_location,
+                        vstatus_val,
+                        1 if contact.is_public else 0,
+                        contact.updated_at,
+                        contact.id,
+                    ),
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO public_contacts (
+                        job_id, person_id, company_id, candidate_company_id,
+                        contact_type, contact_value, associated_person_name,
+                        associated_job_title, associated_company, source_url,
+                        source_type, file_name, supporting_quote, source_location,
+                        verification_status, is_public, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        contact.job_id,
+                        contact.person_id,
+                        contact.company_id,
+                        contact.candidate_company_id,
+                        ctype_val,
+                        contact.contact_value,
+                        contact.associated_person_name,
+                        contact.associated_job_title,
+                        contact.associated_company,
+                        contact.source_url,
+                        contact.source_type,
+                        contact.file_name,
+                        contact.supporting_quote,
+                        contact.source_location,
+                        vstatus_val,
+                        1 if contact.is_public else 0,
+                        contact.created_at,
+                        contact.updated_at,
+                    ),
+                )
+                contact.id = cursor.lastrowid
+        return contact
+    finally:
+        conn.close()
+
+
+def save_public_contacts(
+    contacts: List[PublicContact], db_path: Optional[str] = None
+) -> List[PublicContact]:
+    """Persist multiple public contacts."""
+    return [save_public_contact(c, db_path=db_path) for c in contacts]
+
+
+def get_public_contacts(
+    job_id: Optional[int] = None,
+    contact_type: Optional[ContactType] = None,
+    verification_status: Optional[ContactVerificationStatus] = None,
+    candidate_company_id: Optional[int] = None,
+    limit: int = 200,
+    offset: int = 0,
+    db_path: Optional[str] = None,
+) -> List[PublicContact]:
+    """Retrieve public contacts with optional filters."""
+    conn = get_connection(db_path)
+    try:
+        query = "SELECT * FROM public_contacts WHERE 1=1"
+        params: List[Any] = []
+        if job_id is not None:
+            query += " AND job_id = ?"
+            params.append(job_id)
+        if contact_type is not None:
+            query += " AND contact_type = ?"
+            params.append(contact_type.value)
+        if verification_status is not None:
+            query += " AND verification_status = ?"
+            params.append(verification_status.value)
+        if candidate_company_id is not None:
+            query += " AND candidate_company_id = ?"
+            params.append(candidate_company_id)
+
+        query += " ORDER BY id ASC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        rows = conn.execute(query, params).fetchall()
+        return [_row_to_public_contact(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def get_public_contact_by_id(
+    contact_id: int, db_path: Optional[str] = None
+) -> Optional[PublicContact]:
+    """Retrieve single public contact by ID."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM public_contacts WHERE id = ?", (contact_id,)).fetchone()
+        if not row:
+            return None
+        return _row_to_public_contact(row)
+    finally:
+        conn.close()
+
+
+def _row_to_public_contact(row: sqlite3.Row) -> PublicContact:
+    return PublicContact(
+        id=row["id"],
+        job_id=row["job_id"],
+        person_id=row["person_id"],
+        company_id=row["company_id"],
+        candidate_company_id=row["candidate_company_id"] if "candidate_company_id" in row.keys() else None,
+        contact_type=ContactType(row["contact_type"]),
+        contact_value=row["contact_value"],
+        associated_person_name=row["associated_person_name"],
+        associated_job_title=row["associated_job_title"],
+        associated_company=row["associated_company"],
+        source_url=row["source_url"],
+        source_type=row["source_type"] or "HTML",
+        file_name=row["file_name"],
+        supporting_quote=row["supporting_quote"] or "",
+        source_location=row["source_location"],
+        verification_status=ContactVerificationStatus(row["verification_status"]),
+        is_public=bool(row["is_public"]),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+# -------------------------------------------------------------
+# Unified Evidence Persistence & Queries
+# -------------------------------------------------------------
+
+def save_unified_evidence(
+    ev: Union[UnifiedEvidence, List[UnifiedEvidence]], db_path: Optional[str] = None
+) -> Union[UnifiedEvidence, List[UnifiedEvidence]]:
+    """Insert or update unified evidence record(s)."""
+    if isinstance(ev, list):
+        return save_unified_evidences(ev, db_path=db_path)
+    conn = get_connection(db_path)
+    try:
+        with conn:
+            claim_val = ev.claim_type.value if hasattr(ev.claim_type, "value") else str(ev.claim_type)
+            cursor = conn.execute(
+                """
+                INSERT INTO unified_evidence (
+                    job_id, company_id, candidate_id, person_id, claim_type,
+                    claim_text, source_url, original_file_url, source_format,
+                    file_name, supporting_quote, source_location, extraction_status,
+                    verification_status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    ev.job_id,
+                    ev.company_id,
+                    ev.candidate_id,
+                    ev.person_id,
+                    claim_val,
+                    ev.claim_text,
+                    ev.source_url,
+                    ev.original_file_url,
+                    ev.source_format,
+                    ev.file_name,
+                    ev.supporting_quote,
+                    ev.source_location,
+                    ev.extraction_status,
+                    ev.verification_status,
+                    ev.created_at,
+                ),
+            )
+            ev.id = cursor.lastrowid
+        return ev
+    finally:
+        conn.close()
+
+
+def save_unified_evidences(
+    evs: List[UnifiedEvidence], db_path: Optional[str] = None
+) -> List[UnifiedEvidence]:
+    """Persist multiple unified evidence records."""
+    return [save_unified_evidence(ev, db_path=db_path) for ev in evs]
+
+
+def get_unified_evidence(
+    job_id: Optional[int] = None,
+    candidate_id: Optional[int] = None,
+    person_id: Optional[int] = None,
+    claim_type: Optional[ClaimType] = None,
+    limit: int = 200,
+    offset: int = 0,
+    db_path: Optional[str] = None,
+) -> List[UnifiedEvidence]:
+    """Retrieve unified evidence records with optional filters."""
+    conn = get_connection(db_path)
+    try:
+        query = "SELECT * FROM unified_evidence WHERE 1=1"
+        params: List[Any] = []
+        if job_id is not None:
+            query += " AND job_id = ?"
+            params.append(job_id)
+        if candidate_id is not None:
+            query += " AND candidate_id = ?"
+            params.append(candidate_id)
+        if person_id is not None:
+            query += " AND person_id = ?"
+            params.append(person_id)
+        if claim_type is not None:
+            query += " AND claim_type = ?"
+            params.append(claim_type.value)
+
+        query += " ORDER BY id ASC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        rows = conn.execute(query, params).fetchall()
+        return [_row_to_unified_evidence(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def _row_to_unified_evidence(row: sqlite3.Row) -> UnifiedEvidence:
+    return UnifiedEvidence(
+        id=row["id"],
+        job_id=row["job_id"],
+        company_id=row["company_id"],
+        candidate_id=row["candidate_id"],
+        person_id=row["person_id"],
+        claim_type=ClaimType(row["claim_type"]),
+        claim_text=row["claim_text"],
+        source_url=row["source_url"],
+        original_file_url=row["original_file_url"],
+        source_format=row["source_format"] or "HTML",
+        file_name=row["file_name"],
+        supporting_quote=row["supporting_quote"] or "",
+        source_location=row["source_location"],
+        extraction_status=row["extraction_status"] or "SUCCESS",
+        verification_status=row["verification_status"] or "UNVERIFIED",
+        created_at=row["created_at"],
+    )
+
+
 
