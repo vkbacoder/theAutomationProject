@@ -7,12 +7,13 @@ Provides:
 - GET  /: Serves the Web Scraper Test dashboard
 """
 
+from contextlib import asynccontextmanager
+import io
 import os
 from pathlib import Path
 from typing import Optional
 
-import io
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -58,6 +59,12 @@ from models import (
     WorkflowType,
 )
 import pipeline
+from crawler_worker import (
+    get_worker_status,
+    start_embedded_worker,
+    stop_embedded_worker,
+    wake_worker,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -66,10 +73,20 @@ STATIC_DIR.mkdir(exist_ok=True)
 # Initialize database tables on module load
 database.init_db()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI application lifespan managing background crawl worker thread."""
+    start_embedded_worker()
+    yield
+    stop_embedded_worker()
+
+
 app = FastAPI(
     title="AI-Powered Lead Research & Qualification System",
     description="Web scraping ingestion engine and Vishnu LLM integration for RECOV and Jedox.",
     version="1.1.0",
+    lifespan=lifespan,
 )
 
 # Enable CORS for local testing
@@ -83,6 +100,12 @@ app.add_middleware(
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """Favicon endpoint returning 204 No Content to avoid browser 404 console errors."""
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class ChatRequest(BaseModel):
@@ -340,6 +363,7 @@ def api_create_crawl_job(payload: CreateCrawlJobRequest):
     )
 
     created_job = database.create_crawl_job(new_job)
+    wake_worker()
     return created_job
 
 
@@ -460,7 +484,18 @@ def api_retry_crawl_job(job_id: int):
         max_pages=job.max_pages,
         max_pages_per_domain=job.max_pages_per_domain,
     )
-    return database.create_crawl_job(retry_job)
+    created_job = database.create_crawl_job(retry_job)
+    wake_worker()
+    return created_job
+
+
+@app.get("/api/crawl/worker/status")
+def api_get_worker_status():
+    """Retrieve status of the crawl worker, mutual exclusion lock, and queue depth."""
+    status_info = get_worker_status()
+    status_info["pending_jobs_count"] = database.count_pending_crawl_jobs()
+    status_info["active_running_job"] = database.get_current_running_crawl_job()
+    return status_info
 
 
 # -------------------------------------------------------------

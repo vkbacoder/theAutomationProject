@@ -687,7 +687,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const pct = Math.min(100, Math.round((crawled / maxP) * 100));
     if (crawlProgressFill) crawlProgressFill.style.width = `${pct}%`;
     if (crawlProgressText) {
-      if (job.status === "RUNNING" && crawled === 0) {
+      if (job.status === "PENDING") {
+        crawlProgressFill.style.width = "5%";
+        crawlProgressText.textContent = `Queued • Awaiting worker pickup... (0 / ${maxP} Pages Crawled)`;
+      } else if (job.status === "RUNNING" && crawled === 0) {
         crawlProgressFill.style.width = "20%";
         crawlProgressText.textContent = `0 / ${maxP} Pages Crawled (Connecting & discovering pages...)`;
       } else {

@@ -967,6 +967,28 @@ def claim_next_pending_job(worker_pid: int, db_path: Optional[str] = None) -> Op
         conn.close()
 
 
+def count_pending_crawl_jobs(db_path: Optional[str] = None) -> int:
+    """Return the number of crawl jobs currently in PENDING status."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT COUNT(*) AS cnt FROM crawl_jobs WHERE status = 'PENDING'").fetchone()
+        return row["cnt"] if row else 0
+    finally:
+        conn.close()
+
+
+def get_current_running_crawl_job(db_path: Optional[str] = None) -> Optional[CrawlJob]:
+    """Retrieve the currently running crawl job if one exists."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM crawl_jobs WHERE status = 'RUNNING' ORDER BY id ASC LIMIT 1").fetchone()
+        if not row:
+            return None
+        return _row_to_crawl_job(row)
+    finally:
+        conn.close()
+
+
 def update_crawl_job_status(
     job_id: int,
     status: CrawlJobStatus,

@@ -22,7 +22,8 @@ htmlcov/
 *.sqlite
 *.sqlite3
 leads.db
-*.bak
+*.bak*
+*.lock
 
 # IDE / Editor Files
 .vscode/
