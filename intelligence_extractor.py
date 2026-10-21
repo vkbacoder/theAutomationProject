@@ -22,11 +22,13 @@ from urllib.parse import urlparse
 from dedup import is_fuzzy_name_match, normalize_company_name
 from models import (
     CandidateCategory,
+    CandidateClassification,
     ClaimType,
     ContactType,
     ContactVerificationStatus,
     DecisionMaker,
     PublicContact,
+    RelationshipType,
     RoleCategory,
     UnifiedEvidence,
 )
@@ -89,6 +91,14 @@ RE_NAME_TITLE_PATTERNS = [
 ]
 
 
+RE_BYLINE_AUTHOR = re.compile(
+    r"(?:^|\b)(?:By|Author|Speaker|Written by|Posted by):\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b",
+    re.IGNORECASE,
+)
+RE_BLOG_CARD_BYLINE = re.compile(
+    r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*\d+",
+)
+
 # -------------------------------------------------------------
 # Contact Extraction Patterns
 # -------------------------------------------------------------
@@ -133,6 +143,7 @@ KNOWN_TECHNOLOGIES_AND_PRODUCTS = [
     "power bi", "tableau", "snowflake", "sap", "sap s/4hana", "oracle", "oracle epm",
     "onestream", "netsuite", "coupa", "greenhouse", "unity catalog", "aws", "gcp",
     "microsoft azure", "salesforce", "workday", "hubspot",
+    "kepion", "tm1", "ibm planning analytics", "cch tagetik", "tagetik", "microsoft fabric", "azure",
 ]
 
 PROJECT_AND_ARCHITECTURE_TERMS = [
@@ -273,6 +284,51 @@ def extract_decision_makers_from_text(
                                 verification_status="CONFIRMED_PUBLIC",
                             )
                         )
+
+        # Check bylines for authors/contributors/speakers on technical/strategic content
+        for byline_pat in (RE_BYLINE_AUTHOR, RE_BLOG_CARD_BYLINE):
+            m_by = byline_pat.search(line)
+            if m_by:
+                name_cand = m_by.group(1).strip()
+                name_words = name_cand.split()
+                if not (1 < len(name_words) <= 4 and all(w[0].isupper() for w in name_words if w.isalpha())):
+                    continue
+                if any(t in name_cand.lower() for t in ("polestar", "analytics", "case study", "company", "solution", "report", "read more")):
+                    continue
+                norm_name = normalize_company_name(name_cand)
+                if norm_name in seen_names or len(norm_name) < 4:
+                    continue
+
+                seen_names.add(norm_name)
+                clean_title = "Author"
+                item_company = company_to_use
+                if re.search(r"\b(?:Director|Founder|Managing\s+Director|CEO|CTO|VP)\b", line, re.IGNORECASE):
+                    matched_role = RoleCategory.EXECUTIVE
+                    clean_title = "Director"
+                    department_desc = "Leadership & Strategy"
+                else:
+                    matched_role = RoleCategory.TECHNOLOGY_IT
+                    department_desc = "Technical Publications & Architecture"
+
+                snippet = line[:250]
+                discovered.append(
+                    DecisionMaker(
+                        job_id=job_id,
+                        name=name_cand,
+                        full_name=name_cand,
+                        normalized_name=norm_name,
+                        title=clean_title,
+                        published_title=clean_title,
+                        department=department_desc,
+                        role_category=matched_role,
+                        associated_company=item_company,
+                        professional_relevance=f"Author of publications and technical articles relevant to {target_product} analytics architecture",
+                        source_url=source_url,
+                        source_type=source_type,
+                        supporting_quote=snippet,
+                        verification_status="CONFIRMED_PUBLIC",
+                    )
+                )
 
     return discovered
 
@@ -490,14 +546,30 @@ def generate_job_unified_evidence(
     contacts: List[PublicContact],
     documents: Optional[List[Any]] = None,
 ) -> List[UnifiedEvidence]:
-    """Aggregate, standardize, and format all evidence into traceable UnifiedEvidence records."""
+    """Aggregate, standardize, and format all evidence into traceable UnifiedEvidence records with stable deduplication."""
     evidences: List[UnifiedEvidence] = []
+    seen_evidence_keys: Set[Tuple[str, str, str, Optional[int], Optional[int], Optional[int]]] = set()
+
+    def _normalize_str(s: Optional[str]) -> str:
+        if not s:
+            return ""
+        return " ".join(s.strip().lower().split())
+
+    def _add_evidence(ev: UnifiedEvidence):
+        claim_str = ev.claim_type.value if hasattr(ev.claim_type, "value") else str(ev.claim_type)
+        norm_url = _normalize_str(ev.source_url)
+        norm_quote = _normalize_str(ev.supporting_quote)
+        key = (claim_str, norm_url, norm_quote, ev.candidate_id, ev.person_id, ev.company_id)
+        if key in seen_evidence_keys:
+            return
+        seen_evidence_keys.add(key)
+        evidences.append(ev)
 
     # 1. Candidate evidence (Relationship and Product Usage)
     for c in candidates:
         for s in c.sources:
             if s.relationship_claim and s.supporting_text:
-                evidences.append(
+                _add_evidence(
                     build_unified_evidence(
                         job_id=job_id,
                         claim_type=ClaimType.RELATIONSHIP,
@@ -510,23 +582,31 @@ def generate_job_unified_evidence(
                     )
                 )
             if s.product_claim and s.supporting_text:
-                evidences.append(
-                    build_unified_evidence(
-                        job_id=job_id,
-                        claim_type=ClaimType.PRODUCT_USAGE,
-                        claim_text=f"{c.target_product} usage claim for {c.candidate_name}: {s.product_claim}",
-                        source_url=s.source_url,
-                        supporting_quote=s.supporting_text,
-                        source_format="DOCUMENT" if any(s.source_url.lower().endswith(ext) for ext in (".pdf", ".xlsx", ".docx", ".pptx", ".csv")) else "HTML",
-                        candidate_id=c.id,
-                        verification_status=c.product_usage_status,
-                    )
+                # Only include product usage claim if candidate product usage is CONFIRMED
+                # or if the source specifically supports verified product usage
+                is_confirmed_usage = (
+                    c.product_usage_status == "CONFIRMED"
+                    or (c.relationship_type not in (RelationshipType.PARTNER, RelationshipType.TARGET_VENDOR, RelationshipType.TECHNOLOGY_PLATFORM, RelationshipType.VENDOR)
+                        and c.classification == CandidateClassification.CONFIRMED)
                 )
+                if is_confirmed_usage:
+                    _add_evidence(
+                        build_unified_evidence(
+                            job_id=job_id,
+                            claim_type=ClaimType.PRODUCT_USAGE,
+                            claim_text=f"{c.target_product} usage claim for {c.candidate_name}: {s.product_claim}",
+                            source_url=s.source_url,
+                            supporting_quote=s.supporting_text,
+                            source_format="DOCUMENT" if any(s.source_url.lower().endswith(ext) for ext in (".pdf", ".xlsx", ".docx", ".pptx", ".csv")) else "HTML",
+                            candidate_id=c.id,
+                            verification_status=c.product_usage_status,
+                        )
+                    )
 
     # 2. Decision Maker evidence
     for dm in decision_makers:
         if dm.supporting_quote:
-            evidences.append(
+            _add_evidence(
                 build_unified_evidence(
                     job_id=job_id,
                     claim_type=ClaimType.DECISION_MAKER,
@@ -546,7 +626,7 @@ def generate_job_unified_evidence(
         if ct.supporting_quote:
             p_name = getattr(ct, "person_name", None) or getattr(ct, "associated_person_name", None)
             s_fmt = getattr(ct, "source_type", None) or getattr(ct, "file_type", "HTML")
-            evidences.append(
+            _add_evidence(
                 build_unified_evidence(
                     job_id=job_id,
                     claim_type=ClaimType.CONTACT,

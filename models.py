@@ -433,7 +433,11 @@ class RelationshipType(str, Enum):
     CASE_STUDY = "CASE_STUDY"
     TESTIMONIAL = "TESTIMONIAL"
     PARTNER = "PARTNER"
+    IMPLEMENTATION_PARTNER = "IMPLEMENTATION_PARTNER"
+    TECHNOLOGY_PLATFORM = "TECHNOLOGY_PLATFORM"
+    TARGET_VENDOR = "TARGET_VENDOR"
     VENDOR = "VENDOR"
+    PROSPECT = "PROSPECT"
     MENTION = "MENTION"
     UNKNOWN = "UNKNOWN"
 
@@ -476,6 +480,13 @@ class CustomerCandidate(BaseModel):
     sources: List[EvidenceReference] = Field(default_factory=list)
     missing_evidence_reason: Optional[str] = None
     research_status: str = "PENDING"
+    relationship_verification_status: str = "UNVERIFIED"
+    relationship_evidence: Optional[str] = None
+    product_usage_evidence: Optional[str] = None
+    supporting_source_url: Optional[str] = None
+    exact_supporting_quote: Optional[str] = None
+    confidence_score: Optional[float] = None
+    verification_rationale: Optional[str] = None
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )

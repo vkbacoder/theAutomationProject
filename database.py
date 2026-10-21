@@ -331,6 +331,20 @@ def init_db(db_path: Optional[str] = None) -> None:
             cand_cols = {row["name"] for row in cursor.fetchall()}
             if "candidate_category" not in cand_cols:
                 conn.execute("ALTER TABLE customer_candidates ADD COLUMN candidate_category TEXT DEFAULT 'NAMED_COMPANY'")
+            if "relationship_verification_status" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN relationship_verification_status TEXT DEFAULT 'UNVERIFIED'")
+            if "relationship_evidence" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN relationship_evidence TEXT")
+            if "product_usage_evidence" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN product_usage_evidence TEXT")
+            if "supporting_source_url" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN supporting_source_url TEXT")
+            if "exact_supporting_quote" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN exact_supporting_quote TEXT")
+            if "confidence_score" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN confidence_score REAL")
+            if "verification_rationale" not in cand_cols:
+                conn.execute("ALTER TABLE customer_candidates ADD COLUMN verification_rationale TEXT")
     finally:
         conn.close()
 
@@ -1441,6 +1455,9 @@ def save_customer_candidate(
                         normalized_name = ?, target_product = ?, relationship_type = ?,
                         classification = ?, candidate_category = ?, product_usage_status = ?, checklist_json = ?,
                         sources_json = ?, missing_evidence_reason = ?, research_status = ?,
+                        relationship_verification_status = ?, relationship_evidence = ?,
+                        product_usage_evidence = ?, supporting_source_url = ?, exact_supporting_quote = ?,
+                        confidence_score = ?, verification_rationale = ?,
                         updated_at = ?
                     WHERE id = ?
                     """,
@@ -1458,6 +1475,13 @@ def save_customer_candidate(
                         sources_json,
                         candidate.missing_evidence_reason,
                         candidate.research_status,
+                        getattr(candidate, "relationship_verification_status", "UNVERIFIED"),
+                        getattr(candidate, "relationship_evidence", None),
+                        getattr(candidate, "product_usage_evidence", None),
+                        getattr(candidate, "supporting_source_url", None),
+                        getattr(candidate, "exact_supporting_quote", None),
+                        getattr(candidate, "confidence_score", None),
+                        getattr(candidate, "verification_rationale", None),
                         candidate.updated_at,
                         candidate.id,
                     ),
@@ -1469,8 +1493,12 @@ def save_customer_candidate(
                         job_id, target_company_id, candidate_name, normalized_name,
                         target_product, relationship_type, classification, candidate_category,
                         product_usage_status, checklist_json, sources_json,
-                        missing_evidence_reason, research_status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        missing_evidence_reason, research_status,
+                        relationship_verification_status, relationship_evidence,
+                        product_usage_evidence, supporting_source_url, exact_supporting_quote,
+                        confidence_score, verification_rationale,
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         candidate.job_id,
@@ -1486,6 +1514,13 @@ def save_customer_candidate(
                         sources_json,
                         candidate.missing_evidence_reason,
                         candidate.research_status,
+                        getattr(candidate, "relationship_verification_status", "UNVERIFIED"),
+                        getattr(candidate, "relationship_evidence", None),
+                        getattr(candidate, "product_usage_evidence", None),
+                        getattr(candidate, "supporting_source_url", None),
+                        getattr(candidate, "exact_supporting_quote", None),
+                        getattr(candidate, "confidence_score", None),
+                        getattr(candidate, "verification_rationale", None),
                         candidate.created_at,
                         candidate.updated_at,
                     ),
@@ -1581,6 +1616,7 @@ def _row_to_customer_candidate(row: sqlite3.Row) -> CustomerCandidate:
         except Exception:
             pass
 
+    col_keys = row.keys()
     return CustomerCandidate(
         id=row["id"],
         job_id=row["job_id"],
@@ -1596,6 +1632,13 @@ def _row_to_customer_candidate(row: sqlite3.Row) -> CustomerCandidate:
         sources=sources_list,
         missing_evidence_reason=row["missing_evidence_reason"],
         research_status=row["research_status"] or "PENDING",
+        relationship_verification_status=row["relationship_verification_status"] if "relationship_verification_status" in col_keys and row["relationship_verification_status"] else "UNVERIFIED",
+        relationship_evidence=row["relationship_evidence"] if "relationship_evidence" in col_keys else None,
+        product_usage_evidence=row["product_usage_evidence"] if "product_usage_evidence" in col_keys else None,
+        supporting_source_url=row["supporting_source_url"] if "supporting_source_url" in col_keys else None,
+        exact_supporting_quote=row["exact_supporting_quote"] if "exact_supporting_quote" in col_keys else None,
+        confidence_score=row["confidence_score"] if "confidence_score" in col_keys else None,
+        verification_rationale=row["verification_rationale"] if "verification_rationale" in col_keys else None,
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -2123,6 +2166,23 @@ def save_unified_evidence(
     try:
         with conn:
             claim_val = ev.claim_type.value if hasattr(ev.claim_type, "value") else str(ev.claim_type)
+            cursor = conn.execute(
+                """
+                SELECT id FROM unified_evidence
+                WHERE job_id = ? AND claim_type = ? AND source_url = ?
+                  AND supporting_quote = ?
+                  AND COALESCE(candidate_id, -1) = COALESCE(?, -1)
+                  AND COALESCE(person_id, -1) = COALESCE(?, -1)
+                  AND COALESCE(company_id, -1) = COALESCE(?, -1)
+                LIMIT 1
+                """,
+                (ev.job_id, claim_val, ev.source_url, ev.supporting_quote, ev.candidate_id, ev.person_id, ev.company_id),
+            )
+            existing = cursor.fetchone()
+            if existing:
+                ev.id = existing["id"]
+                return ev
+
             cursor = conn.execute(
                 """
                 INSERT INTO unified_evidence (

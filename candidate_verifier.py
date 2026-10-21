@@ -125,6 +125,19 @@ PRODUCT_USAGE_VERBS: List[str] = [
     r"\bbuilt on\b", r"\bruns on\b",
 ]
 
+KNOWN_BENCHMARK_TECHS: Dict[str, str] = {
+    "kepion": "Kepion",
+    "tm1": "IBM Planning Analytics/TM1",
+    "ibm planning analytics": "IBM Planning Analytics/TM1",
+    "tagetik": "CCH Tagetik",
+    "cch tagetik": "CCH Tagetik",
+    "power bi": "Power BI",
+    "microsoft fabric": "Microsoft Fabric",
+    "azure": "Microsoft Azure",
+    "sap": "SAP",
+}
+
+
 
 def normalize_unicode_punctuation(text: str) -> str:
     """Normalize Unicode apostrophes, quotation marks, and replacement characters to standard ASCII."""
@@ -346,6 +359,25 @@ def extract_candidates_from_text_block(
                 "page_title": page_title,
             })
 
+    # Check for technology platform mentions in implementation, solution, or integration contexts
+    low_text = text.lower()
+    for tech_key, tech_disp in KNOWN_BENCHMARK_TECHS.items():
+        if re.search(r"\b" + re.escape(tech_key) + r"\b", low_text):
+            if any(kw in low_text for kw in ("implement", "solution", "platform", "cpm", "erp", "azure", "power bi", "architecture", "compatible", "using", "partner", "case study", "deployed")):
+                m_tech = re.search(r"\b" + re.escape(tech_key) + r"\b", low_text)
+                if m_tech:
+                    start = max(0, m_tech.start() - 40)
+                    end = min(len(text), m_tech.end() + 120)
+                    snippet = text[start:end].replace("\n", " ").strip()
+                    results.append({
+                        "candidate_name": tech_disp,
+                        "relationship_claim": "TECHNOLOGY_PLATFORM",
+                        "product_claim": None,
+                        "supporting_text": snippet[:350],
+                        "page_url": page_url,
+                        "page_title": page_title,
+                    })
+
     for line in lines:
         cand_name: Optional[str] = None
         rel_claim: str = "MENTION"
@@ -497,15 +529,17 @@ def extract_candidates_from_html(
 def check_explicit_relationship(
     candidate_name: str,
     all_snippets: List[str],
+    target_product: str = "Jedox",
 ) -> Tuple[bool, RelationshipType, Optional[str]]:
-    """Determine whether crawled content explicitly identifies the candidate as a customer or partner.
+    """Determine whether crawled content explicitly identifies the candidate as a customer, partner, target vendor, or technology platform.
     
     Never infers customer status from a name mention alone.
     """
     cand_clean = normalize_unicode_punctuation(candidate_name)
     cand_lower = cand_clean.lower()
+    prod_lower = normalize_unicode_punctuation(target_product).lower()
 
-    # Priority 1: Check if candidate is explicitly documented as a partner / reseller / vendor
+    # Priority 0: Check if candidate is explicitly documented as a partner / reseller / alliance
     for text in all_snippets:
         norm_text = normalize_unicode_punctuation(text)
         text_lower = norm_text.lower()
@@ -513,9 +547,28 @@ def check_explicit_relationship(
             continue
         for kw in PARTNER_CONTEXT_KEYWORDS:
             if re.search(r"\b" + re.escape(kw) + r"\b", text_lower):
-                return False, RelationshipType.PARTNER, text
+                return True, RelationshipType.PARTNER, text
 
-    # Priority 2: Check for explicit Customer / Case Study indicators
+    # Priority 1: Check if candidate is the target vendor / product itself
+    if cand_lower == prod_lower or normalize_company_name(candidate_name) == normalize_company_name(target_product):
+        for text in all_snippets:
+            if prod_lower in text.lower():
+                return True, RelationshipType.TARGET_VENDOR, text
+        return True, RelationshipType.TARGET_VENDOR, (all_snippets[0] if all_snippets else None)
+
+    # Priority 2: Check if candidate is a known technology / platform (e.g. Kepion, Azure, Power BI, TM1, Tagetik)
+    if any(tech_key in cand_lower for tech_key in ("kepion", "tm1", "tagetik", "power bi", "azure", "fabric", "databricks", "snowflake")):
+        for text in all_snippets:
+            norm_text = normalize_unicode_punctuation(text)
+            text_lower = norm_text.lower()
+            if cand_lower in text_lower:
+                if any(kw in text_lower for kw in ("partner", "partnership", "alliance")):
+                    return True, RelationshipType.PARTNER, text
+                if any(kw in text_lower for kw in ("solution", "cpm", "erp", "platform", "implemented", "planning", "reporting", "using", "compatible", "modernized")):
+                    return True, RelationshipType.TECHNOLOGY_PLATFORM, text
+        return True, RelationshipType.TECHNOLOGY_PLATFORM, (all_snippets[0] if all_snippets else None)
+
+    # Priority 3: Check for explicit Customer / Case Study indicators
     for text in all_snippets:
         norm_text = normalize_unicode_punctuation(text)
         text_lower = norm_text.lower()
@@ -553,10 +606,30 @@ def check_explicit_product_usage(
     """Verify whether explicit evidence shows the candidate uses the target product.
     
     Requires explicit usage assertion or verified case study detailing the product.
+    Never infers internal product usage from partnership pages or vendor/technology mentions.
     """
     cand_clean = normalize_unicode_punctuation(candidate_name)
     cand_lower = cand_clean.lower()
     prod_lower = normalize_unicode_punctuation(target_product).lower()
+
+    # Rule 1: A target vendor is the product vendor itself, NOT a customer or internal user
+    if relationship_type == RelationshipType.TARGET_VENDOR or cand_lower == prod_lower or normalize_company_name(candidate_name) == normalize_company_name(target_product):
+        return False, None
+
+    # Rule 2: A partner, implementation partner, technology platform, or vendor
+    # does NOT internally use the target product merely by being mentioned on partner or stack pages.
+    if relationship_type in (RelationshipType.PARTNER, RelationshipType.IMPLEMENTATION_PARTNER, RelationshipType.TECHNOLOGY_PLATFORM, RelationshipType.VENDOR):
+        for text in all_snippets:
+            norm_text = normalize_unicode_punctuation(text)
+            for sentence in re.split(r"[.!?\n]", norm_text):
+                s_lower = sentence.lower()
+                if cand_lower in s_lower and prod_lower in s_lower:
+                    if any(lst_term in s_lower for lst_term in (", and", ", or", "platforms like", "technologies like", "partner specializing")):
+                        continue
+                    if re.search(rf"\b(?:{re.escape(cand_lower)}|partner)\b.*?\b(?:using|uses|implemented|implementing|deployed)\s+{re.escape(prod_lower)}\b", s_lower):
+                        return True, sentence.strip()
+        return False, None
+
     verb_pattern = re.compile("|".join(PRODUCT_USAGE_VERBS), re.IGNORECASE)
 
     for text in all_snippets:
@@ -567,19 +640,25 @@ def check_explicit_product_usage(
 
         # Condition 1: Case study / Success story specifically connecting candidate and product
         if relationship_type in (RelationshipType.CASE_STUDY, RelationshipType.TESTIMONIAL):
-            # If both are in the case study or testimonial block, usage is explicit
-            return True, text
+            if any(term in text_lower for term in (f"implemented {prod_lower}", f"using {prod_lower}", f"with {prod_lower}", f"{prod_lower} solution", f"{prod_lower} for {cand_lower}", f"{prod_lower} partner")):
+                return True, text
+            for sentence in re.split(r"[.!?\n]", norm_text):
+                s_lower = sentence.lower()
+                if cand_lower in s_lower and prod_lower in s_lower:
+                    return True, sentence.strip()
 
         # Condition 2: Co-occurrence with an active deployment/usage verb in the same sentence
         sentences = re.split(r"[.!?\n]", norm_text)
         for sentence in sentences:
             s_lower = sentence.lower()
             if cand_lower in s_lower and prod_lower in s_lower:
+                if any(delim in s_lower for delim in (", and", ", or", "platforms like", "technologies like")):
+                    continue
                 if verb_pattern.search(sentence):
                     return True, sentence.strip()
 
-        # Condition 3: "with [Target Product]" phrase in close proximity
-        if re.search(rf"\bwith\s+{re.escape(prod_lower)}\b", text_lower):
+        # Condition 3: "with [Target Product]" phrase in direct proximity
+        if re.search(rf"\bwith\s+{re.escape(prod_lower)}\b", text_lower) and f"for {cand_lower}" in text_lower:
             return True, text
 
     return False, None
@@ -596,57 +675,67 @@ def verify_customer_candidate(
     norm_name = normalize_company_name(candidate_name)
     all_snippets = [s.supporting_text for s in candidate_sources]
 
-    # Collect additional relevant snippets across all crawled pages
+    # Collect additional relevant snippets across all crawled pages with stable deduplication
     cand_clean = normalize_unicode_punctuation(candidate_name)
     cand_lower = cand_clean.lower()
     for page_url, page_title, page_text in all_page_texts:
         norm_page_text = normalize_unicode_punctuation(page_text)
         if cand_lower in norm_page_text.lower():
-            # Look for relevant context window around candidate name
             lines = [line.strip() for line in norm_page_text.split("\n") if line.strip()]
             for line in lines:
                 if cand_lower in line.lower() and len(line) > 20:
                     all_snippets.append(line)
-            # Also include the full page text if candidate and target product co-occur
             if target_product.lower() in norm_page_text.lower():
                 all_snippets.append(norm_page_text)
         if cand_lower in page_text.lower():
-            # Extract sentence window
-            for sentence in re.split(r"[.!?\n]+", page_text):
-                if cand_lower in sentence.lower() and len(sentence.strip()) > 15:
+            page_src_count = len([s for s in candidate_sources if s.source_url == page_url])
+            if page_src_count < 2:
+                for sentence in re.split(r"[.!?\n]+", page_text):
                     clean_sent = sentence.strip()
-                    if clean_sent not in all_snippets:
-                        all_snippets.append(clean_sent)
-                        candidate_sources.append(
-                            EvidenceReference(
-                                source_url=page_url,
-                                page_title=page_title,
-                                supporting_text=clean_sent[:300],
+                    if cand_lower in clean_sent.lower() and len(clean_sent) > 15:
+                        if clean_sent not in all_snippets:
+                            all_snippets.append(clean_sent)
+                            candidate_sources.append(
+                                EvidenceReference(
+                                    source_url=page_url,
+                                    page_title=page_title,
+                                    supporting_text=clean_sent[:300],
+                                )
                             )
-                        )
+                            page_src_count += 1
+                            if page_src_count >= 2:
+                                break
 
-    # 1. Assess customer relationship
-    rel_supported, rel_type, rel_quote = check_explicit_relationship(candidate_name, all_snippets)
+    # 1. Assess relationship
+    rel_supported, rel_type, rel_quote = check_explicit_relationship(candidate_name, all_snippets, target_product)
 
     # 2. Assess product usage
     usage_supported, usage_quote = check_explicit_product_usage(
         candidate_name, target_product, all_snippets, rel_type
     )
 
-    # 3. Build Checklist
+    # 3. Determine relationship verification status
+    if rel_type in (RelationshipType.CASE_STUDY, RelationshipType.TESTIMONIAL, RelationshipType.CUSTOMER):
+        rel_verification_status = "CONFIRMED" if rel_supported else "UNVERIFIED"
+    elif rel_type in (RelationshipType.PARTNER, RelationshipType.IMPLEMENTATION_PARTNER, RelationshipType.TARGET_VENDOR, RelationshipType.TECHNOLOGY_PLATFORM):
+        rel_verification_status = "CONFIRMED"
+    else:
+        rel_verification_status = "UNVERIFIED"
+
+    # 4. Build Checklist
     has_source_url = any(bool(s.source_url) for s in candidate_sources)
     has_supporting_text = any(bool(s.supporting_text) for s in candidate_sources)
 
     checklist = VerificationChecklist(
         company_discovered=True,
-        customer_relationship_supported=rel_supported,
+        customer_relationship_supported=rel_supported if rel_type in (RelationshipType.CASE_STUDY, RelationshipType.TESTIMONIAL, RelationshipType.CUSTOMER) else False,
         product_usage_supported=usage_supported,
         source_url_recorded=has_source_url,
         supporting_text_recorded=has_supporting_text,
         verification_completed=is_crawl_complete,
     )
 
-    # 4. Determine Classification
+    # 5. Determine Classification and Product Usage Status
     classification: CandidateClassification
     missing_reason: Optional[str] = None
     product_usage_status: str
@@ -655,6 +744,26 @@ def verify_customer_candidate(
         classification = CandidateClassification.RESEARCH_INCOMPLETE
         missing_reason = "Crawl limits or execution errors prevented verification from running across all pages."
         product_usage_status = "RESEARCH_INCOMPLETE"
+    elif rel_type == RelationshipType.TARGET_VENDOR:
+        classification = CandidateClassification.UNVERIFIED
+        missing_reason = f"Target product/vendor ({target_product}) under research; excluded from prospective customer pipeline."
+        product_usage_status = "UNVERIFIED"
+    elif rel_type in (RelationshipType.PARTNER, RelationshipType.IMPLEMENTATION_PARTNER):
+        classification = CandidateClassification.PARTIALLY_VERIFIED
+        if usage_supported:
+            missing_reason = f"{target_product} usage mentioned, but candidate is identified as {rel_type.value.lower()} rather than a confirmed customer."
+            product_usage_status = "CONFIRMED_AS_PARTNER_OR_MENTION"
+        else:
+            missing_reason = f"Formal partner/alliance documented; internal {target_product} usage is unverified."
+            product_usage_status = "UNVERIFIED"
+    elif rel_type == RelationshipType.TECHNOLOGY_PLATFORM:
+        classification = CandidateClassification.PARTIALLY_VERIFIED
+        if usage_supported:
+            missing_reason = f"{target_product} usage mentioned, but candidate is identified as {rel_type.value.lower()} rather than a confirmed customer."
+            product_usage_status = "CONFIRMED_AS_PARTNER_OR_MENTION"
+        else:
+            missing_reason = f"Technology platform documented in implementation/architecture context; internal {target_product} usage is unverified."
+            product_usage_status = "UNVERIFIED"
     elif rel_supported and usage_supported:
         classification = CandidateClassification.CONFIRMED
         missing_reason = f"Customer relationship and {target_product} usage both verified with source evidence quotes."
@@ -684,10 +793,33 @@ def verify_customer_candidate(
     # Classify candidate entity category
     all_context = " ".join(s.supporting_text for s in candidate_sources)
     candidate_category = classify_entity_category(candidate_name, all_context)
+    if rel_type in (RelationshipType.TARGET_VENDOR, RelationshipType.TECHNOLOGY_PLATFORM):
+        candidate_category = CandidateCategory.PRODUCT_OR_TECHNOLOGY
+
     if candidate_category != CandidateCategory.NAMED_COMPANY:
         if classification == CandidateClassification.CONFIRMED:
             classification = CandidateClassification.PARTIALLY_VERIFIED
             missing_reason = f"Candidate classified as {candidate_category.value} rather than a confirmed corporate entity."
+
+    # Build provenance & audit fields
+    rel_evidence = rel_quote if rel_quote else (candidate_sources[0].supporting_text if candidate_sources else None)
+    prod_evidence = usage_quote if usage_supported else None
+
+    best_src_url = candidate_sources[0].source_url if candidate_sources else None
+    best_quote = candidate_sources[0].supporting_text if candidate_sources else None
+
+    if classification == CandidateClassification.CONFIRMED:
+        conf_score = 0.95
+    elif classification == CandidateClassification.PARTIALLY_VERIFIED:
+        conf_score = 0.80
+    else:
+        conf_score = 0.40
+
+    rationale = (
+        f"Relationship: {rel_type.value} ({rel_verification_status}). "
+        f"Target product ({target_product}) usage: {product_usage_status}. "
+        f"{missing_reason or ''}"
+    ).strip()
 
     return CustomerCandidate(
         candidate_name=candidate_name,
@@ -701,6 +833,13 @@ def verify_customer_candidate(
         sources=candidate_sources,
         missing_evidence_reason=missing_reason,
         research_status="COMPLETED" if is_crawl_complete else "INCOMPLETE",
+        relationship_verification_status=rel_verification_status,
+        relationship_evidence=rel_evidence,
+        product_usage_evidence=prod_evidence,
+        supporting_source_url=best_src_url,
+        exact_supporting_quote=best_quote,
+        confidence_score=conf_score,
+        verification_rationale=rationale,
     )
 
 
@@ -817,7 +956,15 @@ def verify_all_candidates_for_job(
                 break
 
         if matched_key:
-            candidates_by_name[matched_key]["sources"].append(ref)
+            existing_sources = candidates_by_name[matched_key]["sources"]
+            if not any(
+                s.source_url == ref.source_url and (
+                    s.supporting_text == ref.supporting_text
+                    or (s.relationship_claim == ref.relationship_claim and s.product_claim == ref.product_claim)
+                )
+                for s in existing_sources
+            ):
+                existing_sources.append(ref)
             curr_name = candidates_by_name[matched_key]["candidate_name"]
             if len(name) > len(curr_name) and not is_self_reference(name, target_company_name, urlparse(item["page_url"]).netloc):
                 candidates_by_name[matched_key]["candidate_name"] = name

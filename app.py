@@ -672,8 +672,15 @@ def api_export_job_data(job_id: int, format: str = "excel"):
             "Category": c.candidate_category.value if hasattr(c.candidate_category, "value") else str(c.candidate_category),
             "Classification": c.classification.value if hasattr(c.classification, "value") else str(c.classification),
             "Relationship Type": c.relationship_type.value if hasattr(c.relationship_type, "value") else str(c.relationship_type),
+            "Relationship Status": getattr(c, "relationship_verification_status", "UNVERIFIED"),
             "Target Product": c.target_product,
             "Product Usage Status": c.product_usage_status,
+            "Relationship Evidence": getattr(c, "relationship_evidence", "") or "",
+            "Product Usage Evidence": getattr(c, "product_usage_evidence", "") or "",
+            "Supporting Source URL": getattr(c, "supporting_source_url", "") or "",
+            "Exact Supporting Quote": getattr(c, "exact_supporting_quote", "") or "",
+            "Confidence Score": getattr(c, "confidence_score", None),
+            "Verification Rationale": getattr(c, "verification_rationale", "") or "",
             "Missing Evidence Reason": c.missing_evidence_reason,
             "Sources Count": len(c.sources),
         }
@@ -714,6 +721,7 @@ def api_export_job_data(job_id: int, format: str = "excel"):
         {
             "Contact Type": ct.contact_type.value if hasattr(ct.contact_type, "value") else str(ct.contact_type),
             "Contact Value": ct.contact_value,
+            "Contact Level": "PERSON" if (ct.person_id or ct.person_name) else "COMPANY",
             "Person Name": ct.person_name,
             "Job Title": ct.job_title,
             "Associated Company": ct.associated_company,
@@ -739,6 +747,20 @@ def api_export_job_data(job_id: int, format: str = "excel"):
         }
         for d in documents
     ])
+
+    if format.lower() == "json":
+        return JSONResponse(
+            content={
+                "job_id": job_id,
+                "company_name": job.company_name,
+                "target_product": job.target_product,
+                "candidates": df_candidates.to_dict(orient="records"),
+                "evidence": df_evidence.to_dict(orient="records"),
+                "decision_makers": df_decision_makers.to_dict(orient="records"),
+                "contacts": df_contacts.to_dict(orient="records"),
+                "documents": df_documents.to_dict(orient="records"),
+            }
+        )
 
     if format.lower() == "csv":
         import zipfile
