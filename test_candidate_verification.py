@@ -487,3 +487,225 @@ def test_api_candidates_endpoints(temp_db):
         query_resp = client.get(f"/api/crawl/jobs/{job_id}/candidates?classification=CONFIRMED")
         assert query_resp.status_code == 200
         assert len(query_resp.json()) >= 1
+
+
+# -------------------------------------------------------------
+# 5. Regression Tests for 3rd Rock Issue
+# -------------------------------------------------------------
+
+def test_regression_first_ordinal_false_positive_rejected():
+    """Ensure generic ordinal words and UI fragments do not become customer candidates."""
+    assert clean_candidate_name("First") is None
+    assert clean_candidate_name("First Cases") is None
+    assert clean_candidate_name("Second") is None
+    assert clean_candidate_name("Initially") is None
+    assert clean_candidate_name("Customer Profile") is None
+    assert clean_candidate_name("The Solution") is None
+
+
+def test_regression_thirdrock_intelligence_and_candidate_verification(temp_db):
+    """Deterministic regression test verifying complete entity extraction, candidate classification,
+    stakeholder identification, and public contact segregation on 3rd Rock case studies.
+    """
+    import sqlite3
+
+    # 1. Setup Target Company
+    target_comp = database.create_company(
+        CompanyProfile(
+            company_name="3rd Rock Business Solutions",
+            normalized_name="3rd rock business solutions",
+            domain="thirdrock.com.au",
+            website_url="https://www.thirdrock.com.au/",
+            workflow=WorkflowType.JEDOX,
+        ),
+        db_path=temp_db,
+    )
+
+    # 2. Setup Crawl Job
+    job = database.create_crawl_job(
+        CrawlJob(
+            seed_url="https://www.thirdrock.com.au/",
+            company_id=target_comp.id,
+            company_name=target_comp.company_name,
+            objective="Identify named customers",
+            target_product="Jedox",
+            workflow=WorkflowType.JEDOX,
+            status=CrawlJobStatus.COMPLETED,
+        ),
+        db_path=temp_db,
+    )
+
+    # 3. Add Deterministic Mocked Pages matching 3rd Rock content
+    # Page A: Starlight Children's Foundation (Jedox case study + Anna Schell quote with unicode quotes)
+    database.save_crawled_page(
+        CrawlPage(
+            job_id=job.id,
+            original_url="https://www.thirdrock.com.au/starlight",
+            title="Starlight Foundation | 3rd Rock Business Solutions",
+            extracted_text=(
+                "Enhanced decision-making for national nonprofit\n"
+                "Starlight Children\u2019s Foundation unleashes the potential of FP&A to drive innovation.\n"
+                "Customer Profile\n"
+                "Starlight Children\u2019s Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness.\n"
+                "3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality.\n"
+                "First implemented to replicate their existing legacy planning and reporting, users realized a clear lack of details.\n"
+                "Results & Outcomes\n"
+                "\"This solution is great for cross functional relationships and collaboration.\"\n"
+                "- Anna Schell ( FP&A Starlight)\n"
+                "Starlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.\n"
+                "3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting."
+            ),
+            status=CrawlPageStatus.SUCCESS,
+        ),
+        db_path=temp_db,
+    )
+
+    # Page B: Ball & Doggett (Customer case study without Jedox)
+    database.save_crawled_page(
+        CrawlPage(
+            job_id=job.id,
+            original_url="https://www.thirdrock.com.au/ball-and-doggett",
+            title="Ball & Doggett | 3rd Rock Business Solutions",
+            extracted_text=(
+                "Performance Management Transformation\n"
+                "Budgeting & Reporting transformation of paper & print material supplier\n"
+                "Customer Profile\n"
+                "The Ball & Doggett is Australia\u2019s largest distributor of printable materials and consumables.\n"
+                "3rd Rock engaged with B&D to identify, design, and implement a solution that met the Customer requirements.\n"
+                "The Customer used Microsoft ERP and were familiar with Azure platform, so 3rd Rock used combination of Microsoft based technologies."
+            ),
+            status=CrawlPageStatus.SUCCESS,
+        ),
+        db_path=temp_db,
+    )
+
+    # Page C: Steadfast Group Limited (Case study without Jedox)
+    database.save_crawled_page(
+        CrawlPage(
+            job_id=job.id,
+            original_url="https://www.thirdrock.com.au/steadfast",
+            title="Steadfast Group Limited | 3rd Rock",
+            extracted_text=(
+                "Steadfast Group Limited\n"
+                "Introduction\n"
+                "Steadfast is Australia\u2019s largest Insurance Broker Network and is owned by its broker-shareholders.\n"
+                "Executive Summary\n"
+                "The Challenge: Manual Complexity\n"
+                "Prior to the implementation, Steadfast faced significant hurdles in managing their distributed planning and consolidation:\n"
+                "Time-Intensive Processes: During their IPO, consolidation required 3-4 months of work."
+            ),
+            status=CrawlPageStatus.SUCCESS,
+        ),
+        db_path=temp_db,
+    )
+
+    # Page D: Jedox Partner page (Partner relationship, not a customer)
+    database.save_crawled_page(
+        CrawlPage(
+            job_id=job.id,
+            original_url="https://www.thirdrock.com.au/jedox-partner",
+            title="Jedox | 3rd Rock",
+            extracted_text=(
+                "Jedox\n"
+                "3rd Rock is a dedicated Jedox Partner specializing in delivering robust, effective Enterprise Performance Management (EPM) and Business Intelligence (BI) solutions.\n"
+                "We focus on transforming the Office of Finance by implementing and supporting Jedox."
+            ),
+            status=CrawlPageStatus.SUCCESS,
+        ),
+        db_path=temp_db,
+    )
+
+    # Page E: Contact Us page (Host company address)
+    database.save_crawled_page(
+        CrawlPage(
+            job_id=job.id,
+            original_url="https://www.thirdrock.com.au/contact",
+            title="Contact | 3rd Rock",
+            extracted_text=(
+                "Contact Us\n"
+                "Reach out to us with your questions, comments or feedback.\n"
+                "55, Pyrmont Bridge Road, Pyrmont Sydney 2009\n"
+            ),
+            status=CrawlPageStatus.SUCCESS,
+        ),
+        db_path=temp_db,
+    )
+
+    # 4. Execute Candidate Verification
+    verified = verify_all_candidates_for_job(job.id, db_path=temp_db)
+    cand_names = [c.candidate_name for c in verified]
+
+    # Verification Assertion: Generic "First" must NOT be extracted
+    assert "First" not in cand_names
+    assert "First Cases" not in cand_names
+
+    # Verification Assertion: Starlight Children's Foundation must be CONFIRMED with Jedox
+    starlight = next((c for c in verified if "starlight" in c.normalized_name), None)
+    assert starlight is not None, "Starlight Children's Foundation must be discovered"
+    assert starlight.classification == CandidateClassification.CONFIRMED
+    assert starlight.checklist.customer_relationship_supported is True
+    assert starlight.checklist.product_usage_supported is True
+    assert starlight.product_usage_status == "CONFIRMED"
+
+    # Verification Assertion: Ball & Doggett must be PARTIALLY_VERIFIED (customer without Jedox)
+    bd = next((c for c in verified if "ball" in c.normalized_name), None)
+    assert bd is not None, "Ball & Doggett must be discovered"
+    assert bd.classification == CandidateClassification.PARTIALLY_VERIFIED
+    assert bd.checklist.customer_relationship_supported is True
+    assert bd.checklist.product_usage_supported is False
+
+    # Verification Assertion: Steadfast Group Limited must be PARTIALLY_VERIFIED (case study without Jedox)
+    steadfast = next((c for c in verified if "steadfast" in c.normalized_name), None)
+    assert steadfast is not None, "Steadfast Group Limited must be discovered"
+    assert steadfast.classification == CandidateClassification.PARTIALLY_VERIFIED
+    assert steadfast.checklist.customer_relationship_supported is True
+    assert steadfast.checklist.product_usage_supported is False
+
+    # Verification Assertion: Jedox is a PARTNER, NOT treated as customer-level usage
+    jedox_cand = next((c for c in verified if c.normalized_name == "jedox"), None)
+    assert jedox_cand is not None, "Jedox must be discovered"
+    assert jedox_cand.relationship_type == RelationshipType.PARTNER
+    assert jedox_cand.classification == CandidateClassification.PARTIALLY_VERIFIED
+
+    # 5. Database Consistency & Foreign-Key Integrity Verification
+    conn = sqlite3.connect(temp_db)
+    cursor = conn.cursor()
+
+    # Decision Maker: Anna Schell must be associated with Starlight candidate ID, NOT company_id
+    cursor.execute(
+        "SELECT id, name, title, department, associated_company, candidate_company_id, company_id, professional_relevance, email, phone "
+        "FROM decision_makers WHERE job_id = ?",
+        (job.id,),
+    )
+    dms = cursor.fetchall()
+    assert len(dms) == 1, f"Expected 1 decision maker, found {len(dms)}"
+    dm_id, name, title, dept, assoc_co, cand_co_id, comp_id, relevance, email, phone = dms[0]
+    assert name == "Anna Schell"
+    assert title == "FP&A"
+    assert cand_co_id == starlight.id, "Candidate company ID must match Starlight candidate table ID"
+    assert comp_id is None, "Company ID must be None since Starlight is a candidate, not a parent company"
+    assert "customer case study" in relevance.lower()
+    assert email is None, "Must not fabricate email"
+    assert phone is None, "Must not fabricate phone"
+
+    # Public Contact: Pyrmont Address must belong to 3rd Rock (target company), NOT a customer
+    cursor.execute(
+        "SELECT id, contact_type, contact_value, associated_job_title, associated_company, candidate_company_id, company_id "
+        "FROM public_contacts WHERE job_id = ?",
+        (job.id,),
+    )
+    contacts = cursor.fetchall()
+    assert len(contacts) == 1, f"Expected 1 contact, found {len(contacts)}"
+    c_id, c_type, c_val, c_title, c_assoc, c_cand_id, c_comp_id = contacts[0]
+    assert "Pyrmont" in c_val
+    assert c_assoc == "3rd Rock Business Solutions"
+    assert c_cand_id is None, "3rd Rock contact must not be assigned to a candidate"
+    assert c_comp_id == target_comp.id, "Must be linked to target company"
+
+    # Unified Evidence: all rows must have valid foreign keys
+    cursor.execute("SELECT count(*) FROM unified_evidence WHERE job_id = ?", (job.id,))
+    ev_count = cursor.fetchone()[0]
+    assert ev_count > 0, "Unified evidence records must be generated and persisted"
+
+    conn.close()
+

@@ -511,13 +511,27 @@ def parse_html_data(html_content: str, base_url: str) -> Dict[str, Any]:
             ):
                 metadata[key_clean] = content.strip()
 
-    # 6. Links Extraction with Absolute URL resolution
+    # 6. Links and Contact Anchors Extraction
     extracted_links: List[LinkItem] = []
     seen_urls: Set[str] = set()
+    emails_from_links: List[str] = []
+    phones_from_links: List[str] = []
 
     for a_tag in soup.find_all("a", href=True):
         raw_href = a_tag.get("href", "").strip()
-        if not raw_href or raw_href.startswith(("#", "javascript:", "mailto:", "tel:")):
+        if not raw_href or raw_href.startswith(("#", "javascript:")):
+            continue
+
+        if raw_href.lower().startswith("mailto:"):
+            email_val = raw_href[7:].split("?")[0].strip()
+            if email_val and "@" in email_val and email_val not in emails_from_links:
+                emails_from_links.append(email_val)
+            continue
+
+        if raw_href.lower().startswith("tel:"):
+            phone_val = raw_href[4:].split("?")[0].strip()
+            if phone_val and phone_val not in phones_from_links:
+                phones_from_links.append(phone_val)
             continue
 
         resolved_url = urljoin(base_url, raw_href)
@@ -527,6 +541,11 @@ def parse_html_data(html_content: str, base_url: str) -> Dict[str, Any]:
         seen_urls.add(resolved_url)
         link_text = a_tag.get_text(strip=True) or a_tag.get("title") or resolved_url
         extracted_links.append(LinkItem(text=link_text[:120], url=resolved_url))
+
+    if emails_from_links:
+        metadata["contact_emails"] = ", ".join(emails_from_links)
+    if phones_from_links:
+        metadata["contact_phones"] = ", ".join(phones_from_links)
 
     # 7. Main Text Extraction via Trafilatura with BeautifulSoup fallback
     main_text = ""
@@ -549,6 +568,17 @@ def parse_html_data(html_content: str, base_url: str) -> Dict[str, Any]:
         for tag in clean_soup(["script", "style", "nav", "footer", "header", "noscript", "svg", "iframe", "button"]):
             tag.decompose()
         main_text = clean_soup.get_text(separator="\n")
+
+    # Ensure mailto / tel contacts are present in text if not already included
+    contact_addons = []
+    for em in emails_from_links:
+        if em.lower() not in main_text.lower():
+            contact_addons.append(f"Email: {em}")
+    for ph in phones_from_links:
+        if ph not in main_text:
+            contact_addons.append(f"Phone: {ph}")
+    if contact_addons:
+        main_text = f"{main_text}\n\n" + "\n".join(contact_addons)
 
     main_text = clean_text(main_text)
     word_count = len(main_text.split()) if main_text else 0

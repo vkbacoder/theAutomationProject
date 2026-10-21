@@ -57,7 +57,7 @@ RE_EXEC_TITLES = [
 
     # Finance, Planning & Performance Leadership
     (r"\b(?:Finance\s+Director|Director\s+of\s+Finance|Financial\s+Controller|Controller)\b", RoleCategory.FINANCE_BUSINESS, "Finance & Controllership"),
-    (r"\b(?:Head\s+of\s+FP&A|FP&A\s+Manager|Director\s+of\s+FP&A|Financial\s+Planning\s+Manager)\b", RoleCategory.FINANCE_BUSINESS, "Financial Planning & Analysis"),
+    (r"\b(?:Head\s+of\s+FP&A|FP&A\s+(?:Manager|Lead|Director|Specialist|Analyst)|FP&A|Financial\s+Planning\s+Manager)\b", RoleCategory.FINANCE_BUSINESS, "Financial Planning & Analysis"),
     (r"\b(?:Head\s+of\s+Planning|Planning\s+Director|EPM\s+Lead|CPM\s+Director)\b", RoleCategory.FINANCE_BUSINESS, "Enterprise Planning"),
     (r"\b(?:Head\s+of\s+Performance\s+Management|Director\s+of\s+Performance\s+Management)\b", RoleCategory.FINANCE_BUSINESS, "Performance Management"),
     (r"\b(?:Head\s+of\s+Procurement|Procurement\s+Director|Purchasing\s+Manager)\b", RoleCategory.FINANCE_BUSINESS, "Procurement & Purchasing"),
@@ -70,9 +70,14 @@ RE_EXEC_TITLES = [
 # Patterns linking Name to Title:
 # "John Doe, Chief Financial Officer"
 # "Jane Smith - Head of FP&A"
+# "- Anna Schell ( FP&A Starlight)"
 # "Director of IT, Robert Taylor"
 # "Spokesperson: Alice Johnson, CFO at Company"
 RE_NAME_TITLE_PATTERNS = [
+    # Parenthetical signature: "- Anna Schell ( FP&A Starlight)" or "Anna Schell (FP&A, Starlight)"
+    re.compile(
+        r"(?:^|[—–\-\n])\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*\(\s*([^)\n]+?)\s*\)",
+    ),
     # "John Doe, CFO" or "John Doe, Chief Technology Officer"
     re.compile(
         r"\b([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*(?:,\s*|—\s*|–\s*|-\s*|\s+is\s+the\s+)([A-Z][A-Za-z0-9&/,\. ]{2,45}?)(?=[.,;\n\)]|$)",
@@ -214,12 +219,25 @@ def extract_decision_makers_from_text(
                     if norm_name in seen_names or len(norm_name) < 4:
                         continue
 
+                    # Check if title_cand contains an embedded company: e.g. "FP&A Starlight" or "FP&A, Starlight"
+                    clean_title = title_cand.strip()
+                    item_company = company_to_use
+                    m_comp = re.search(r"^(.*?)(?:\s+(?:at|@|,)\s+|\s+-\s+)(.+)$", title_cand, re.IGNORECASE)
+                    if m_comp:
+                        clean_title = m_comp.group(1).strip()
+                        item_company = m_comp.group(2).strip()
+                    else:
+                        m_space_comp = re.search(r"^(FP&A|CFO|CTO|CIO|CEO|COO|VP|Director|Manager)\s+([A-Z][A-Za-z0-9&.' -]+)$", title_cand, re.IGNORECASE)
+                        if m_space_comp:
+                            clean_title = m_space_comp.group(1).strip()
+                            item_company = m_space_comp.group(2).strip()
+
                     matched_role = None
                     department_desc = "Management"
-                    relevance_desc = f"Decision-maker in organizational hierarchy"
+                    relevance_desc = "Decision-maker in organizational hierarchy"
 
                     for role_pattern, role_cat, dept in RE_EXEC_TITLES:
-                        if re.search(role_pattern, title_cand, re.IGNORECASE):
+                        if re.search(role_pattern, clean_title, re.IGNORECASE) or re.search(role_pattern, title_cand, re.IGNORECASE):
                             matched_role = role_cat
                             department_desc = dept
                             if role_cat == RoleCategory.FINANCE_BUSINESS:
@@ -230,6 +248,10 @@ def extract_decision_makers_from_text(
                                 relevance_desc = f"Executive signing and strategy authority"
                             break
 
+                    # Distinguish customer case-study stakeholders from active purchasing decision-makers
+                    if any(kw in source_url.lower() for kw in ("case-stud", "starlight", "customer", "success-stor", "stories", "reference")):
+                        relevance_desc = "Named professional stakeholder associated with customer case study"
+
                     if matched_role:
                         seen_names.add(norm_name)
                         snippet = line[:250]
@@ -239,11 +261,11 @@ def extract_decision_makers_from_text(
                                 name=name_cand,
                                 full_name=name_cand,
                                 normalized_name=norm_name,
-                                title=title_cand,
-                                published_title=title_cand,
+                                title=clean_title,
+                                published_title=clean_title,
                                 department=department_desc,
                                 role_category=matched_role,
-                                associated_company=company_to_use,
+                                associated_company=item_company,
                                 professional_relevance=relevance_desc,
                                 source_url=source_url,
                                 source_type=source_type,
@@ -269,7 +291,7 @@ def extract_public_contacts_from_text(
     file_type: Optional[str] = None,
     job_id: Optional[int] = None,
 ) -> List[PublicContact]:
-    """Extract and strictly validate public professional emails, phone numbers, and LinkedIn URLs."""
+    """Extract and strictly validate public professional emails, phone numbers, addresses, and LinkedIn URLs."""
     contacts: List[PublicContact] = []
     if not text:
         return contacts
@@ -299,36 +321,22 @@ def extract_public_contacts_from_text(
         end = min(len(text), match.end() + 50)
         quote = text[start:end].replace("\n", " ").strip()
 
+        # Classify general company contact vs named employee
+        is_general_inbox = any(
+            email_clean.lower().startswith(pfx)
+            for pfx in ("webadmin@", "info@", "contact@", "support@", "admin@", "sales@", "hello@", "enquiries@")
+        )
+        j_title = "Company Contact Email" if is_general_inbox else None
+
         contacts.append(
             PublicContact(
                 job_id=job_id or 0,
                 contact_type=ContactType.EMAIL,
                 contact_value=email_clean,
+                job_title=j_title,
                 associated_company=associated_company,
                 source_url=source_url,
                 source_type=resolved_source_type,
-                file_name=file_name,
-                supporting_quote=quote,
-                source_location=source_location,
-                verification_status=ContactVerificationStatus.VERIFIED_PUBLIC,
-                is_public=True,
-            )
-        )
-
-        seen_values.add(lowered)
-        # Capture surrounding snippet for audit quote
-        start = max(0, match.start() - 60)
-        end = min(len(text), match.end() + 60)
-        quote = text[start:end].replace("\n", " ").strip()
-
-        contacts.append(
-            PublicContact(
-                job_id=0,
-                contact_type=ContactType.EMAIL,
-                contact_value=email_clean,
-                associated_company=associated_company,
-                source_url=source_url,
-                source_type=source_type,
                 file_name=file_name,
                 supporting_quote=quote,
                 source_location=source_location,
@@ -351,12 +359,12 @@ def extract_public_contacts_from_text(
 
         contacts.append(
             PublicContact(
-                job_id=0,
+                job_id=job_id or 0,
                 contact_type=ContactType.LINKEDIN,
                 contact_value=full_url,
                 associated_company=associated_company,
                 source_url=source_url,
-                source_type=source_type,
+                source_type=resolved_source_type,
                 file_name=file_name,
                 supporting_quote=quote,
                 source_location=source_location,
@@ -390,12 +398,43 @@ def extract_public_contacts_from_text(
 
             contacts.append(
                 PublicContact(
-                    job_id=0,
+                    job_id=job_id or 0,
                     contact_type=ctype,
                     contact_value=raw_phone,
+                    job_title="Company Phone",
                     associated_company=associated_company,
                     source_url=source_url,
-                    source_type=source_type,
+                    source_type=resolved_source_type,
+                    file_name=file_name,
+                    supporting_quote=quote,
+                    source_location=source_location,
+                    verification_status=ContactVerificationStatus.VERIFIED_PUBLIC,
+                    is_public=True,
+                )
+            )
+
+    # 4. Public Business Address
+    m_addr = re.search(
+        r"(\d{1,4}[a-zA-Z]?,?\s+[A-Za-z0-9\s,'-]+(?:Road|Street|Avenue|Boulevard|Lane|Drive|Way|Parade|Crescent|Hwy|Highway),?\s+[A-Za-z\s]+(?:\s+[A-Z]{2,3})?\s+\d{4})",
+        text,
+        re.IGNORECASE,
+    )
+    if m_addr:
+        addr_clean = m_addr.group(1).strip()
+        if addr_clean not in seen_values and len(addr_clean) < 120:
+            seen_values.add(addr_clean)
+            start = max(0, m_addr.start() - 30)
+            end = min(len(text), m_addr.end() + 30)
+            quote = text[start:end].replace("\n", " ").strip()
+            contacts.append(
+                PublicContact(
+                    job_id=job_id or 0,
+                    contact_type=ContactType.OTHER,
+                    contact_value=addr_clean,
+                    job_title="Company Address",
+                    associated_company=associated_company,
+                    source_url=source_url,
+                    source_type=resolved_source_type,
                     file_name=file_name,
                     supporting_quote=quote,
                     source_location=source_location,
@@ -495,7 +534,8 @@ def generate_job_unified_evidence(
                     source_url=dm.source_url,
                     supporting_quote=dm.supporting_quote,
                     source_format=dm.source_type,
-                    candidate_id=dm.company_id,
+                    candidate_id=dm.candidate_company_id,
+                    company_id=dm.company_id or dm.target_company_id,
                     person_id=dm.id,
                     verification_status=dm.verification_status,
                 )
@@ -516,7 +556,8 @@ def generate_job_unified_evidence(
                     source_format=s_fmt or "HTML",
                     file_name=ct.file_name,
                     source_location=ct.source_location,
-                    candidate_id=ct.company_id,
+                    candidate_id=ct.candidate_company_id,
+                    company_id=ct.company_id,
                     person_id=ct.person_id,
                     verification_status=ct.verification_status.value if hasattr(ct.verification_status, "value") else str(ct.verification_status),
                 )

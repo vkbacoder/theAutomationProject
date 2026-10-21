@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 # Common UI / Navigation false-positive terms to reject
 FALSE_POSITIVE_TERMS: Set[str] = {
-    "about", "about us", "blog", "careers", "case studies", "case study",
+    "about", "about us", "blog", "blogs", "careers", "case studies", "case study",
     "clients", "community", "company", "contact", "contact us", "cookie policy",
     "customer stories", "customer story", "customers", "demo", "documentation",
     "download", "downloads", "events", "faq", "features", "get started",
@@ -52,6 +52,19 @@ FALSE_POSITIVE_TERMS: Set[str] = {
     "sign in", "sign up", "sitemap", "solution", "solutions", "stories", "success stories",
     "success story", "support", "terms", "terms of service", "terms of use",
     "testimonials", "trusted by", "webinars", "whitepapers", "why us",
+    "customer profile", "client profile", "results & outcomes", "business challenges",
+    "proposed solution", "results", "outcomes", "introduction", "executive summary",
+    "challenge", "solution", "the challenge", "the solution", "first cases", "cases",
+    "key differenciators", "satisfaction guarantee", "analytics & planning", "reporting & analytics",
+    "planning & consolidation", "financial planning & consolidation", "cloud analytics modernization",
+    "reporting", "analytics", "planning", "data science acceleration", "full life cycle support",
+}
+
+# Ordinals, adverbs, and generic narrative starters to reject from candidate extraction
+ADVERBS_AND_ORDINALS: Set[str] = {
+    "first", "second", "third", "fourth", "fifth", "initially", "originally",
+    "recently", "successfully", "previously", "finally", "currently",
+    "furthermore", "additionally", "moreover", "first cases",
 }
 
 TRAILING_FRAGMENT_WORDS: Set[str] = {
@@ -80,7 +93,7 @@ RE_TITLE_CASE_STUDY = re.compile(
 )
 
 RE_CORP_SUFFIX = re.compile(
-    r"\b([A-Z][A-Za-z0-9&.' -]{1,30}?\s+(?:GmbH|LLC|Inc\.?|Corp\.?|Ltd\.?|Pvt\.?\s*Ltd\.?))\b",
+    r"\b([A-Z][A-Za-z0-9&.' -]{1,35}?\s+(?:GmbH|LLC|Inc\.?|Corp\.?|Ltd\.?|Limited|Pty\.?\s*Ltd\.?|Pvt\.?\s*Ltd\.?))\b",
 )
 
 RE_TESTIMONIAL_SIG = re.compile(
@@ -113,29 +126,46 @@ PRODUCT_USAGE_VERBS: List[str] = [
 ]
 
 
+def normalize_unicode_punctuation(text: str) -> str:
+    """Normalize Unicode apostrophes, quotation marks, and replacement characters to standard ASCII."""
+    if not text:
+        return ""
+    # Normalize single quotes, apostrophes, and replacement characters
+    t = re.sub(r"[\u2018\u2019\u201a\u201b\ufffd`´]", "'", text)
+    # Normalize double quotes
+    t = re.sub(r'[\u201c\u201d\u201e\u201f""]', '"', t)
+    # Normalize non-breaking and irregular spaces
+    t = re.sub(r"[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]", " ", t)
+    return t
+
+
 def clean_candidate_name(raw_name: str) -> Optional[str]:
     """Sanitize and validate an extracted candidate organization name."""
     if not raw_name:
         return None
-    name = raw_name.strip()
+    name = normalize_unicode_punctuation(raw_name).strip()
     # Strip leading/trailing punctuation and quotes
-    name = re.sub(r"^[\"\'“‘\s\-—–:,\.!?]+|[\"\'”’\s\-—–:,\.!?]+$", "", name).strip()
+    name = re.sub(r"^[\"\'\s\-—–:,\.!?]+|[\"\'\s\-—–:,\.!?]+$", "", name).strip()
     
     # Strip common prefixes or suffixes
     name = re.sub(r"(?i)\s+(?:logo|client logo|customer logo)$", "", name).strip()
     name = re.sub(r"(?i)^(?:logo of|the|a|an)\s+", "", name).strip()
 
-    if len(name) < 2 or len(name) > 50:
+    if len(name) < 2 or len(name) > 60:
         return None
 
     words = name.split()
     # Company names shouldn't be long sentences
-    if len(words) > 5:
+    if len(words) > 6:
         return None
 
     # Filter out pure numbers or single words that match common web UI terms
     lowered = name.lower()
     if lowered in FALSE_POSITIVE_TERMS:
+        return None
+
+    # Reject ordinals, adverbs, and generic case heading fragments (e.g. "First", "First Cases")
+    if lowered in ADVERBS_AND_ORDINALS or words[0].lower() in ADVERBS_AND_ORDINALS:
         return None
 
     # Reject if leading or trailing word is a fragment/preposition/conjunction
@@ -154,15 +184,22 @@ def clean_candidate_name(raw_name: str) -> Optional[str]:
 def is_self_reference(candidate_name: str, target_company_name: Optional[str], target_domain: Optional[str]) -> bool:
     """Check if the candidate name is simply the target company itself."""
     norm_cand = normalize_company_name(candidate_name)
+    cand_compact = re.sub(r"[^a-z0-9]", "", candidate_name.lower())
+
     if target_company_name:
         norm_target = normalize_company_name(target_company_name)
+        target_compact = re.sub(r"[^a-z0-9]", "", target_company_name.lower())
         if norm_cand == norm_target or is_fuzzy_name_match(candidate_name, target_company_name, threshold=85.0):
+            return True
+        if target_compact and (target_compact in cand_compact or cand_compact in target_compact):
+            return True
+        if "3rdrock" in cand_compact or "thirdrock" in cand_compact:
             return True
 
     if target_domain:
         # Extract main domain stem
-        domain_stem = target_domain.split(".")[0].lower()
-        if len(domain_stem) > 2 and domain_stem in norm_cand:
+        domain_stem = target_domain.split(".")[0].lower().replace("www", "")
+        if len(domain_stem) > 2 and (domain_stem in norm_cand.replace(" ", "") or domain_stem in cand_compact):
             return True
 
     return False
@@ -180,6 +217,10 @@ def extract_candidates_from_text_block(
     if not text:
         return results
 
+    text = normalize_unicode_punctuation(text)
+    if page_title:
+        page_title = normalize_unicode_punctuation(page_title)
+
     lines = [line.strip() for line in text.split("\n") if line.strip()]
 
     # Check page title if present
@@ -196,6 +237,114 @@ def extract_candidates_from_text_block(
                     "page_url": page_url,
                     "page_title": page_title,
                 })
+
+        # Check standard Title formats: "<Subject Entity> | <Target Company>" or "<Subject Entity> - <Target Company>"
+        if any(sep in page_title for sep in ("|", " - ", " — ", " – ")):
+            parts = re.split(r"\s*[|\-—–]\s*", page_title)
+            for part in parts:
+                cleaned_part = clean_candidate_name(part)
+                if cleaned_part and not is_self_reference(cleaned_part, target_company_name, urlparse(page_url).netloc):
+                    low_url = page_url.lower()
+                    low_text = text.lower()
+                    is_partner_page = "partner" in low_url or "partner" in low_text
+                    is_case_study = any(kw in low_url for kw in ("case-stud", "starlight", "ball-and-doggett", "steadfast", "customer", "story", "stories")) or any(kw in low_text for kw in ("customer profile", "client profile", "case study", "customer story", "prior to the implementation"))
+
+                    if is_partner_page:
+                        results.append({
+                            "candidate_name": cleaned_part,
+                            "relationship_claim": "PARTNER",
+                            "product_claim": f"Partner entity for {cleaned_part}",
+                            "supporting_text": f"Found in page title on partner page: '{page_title}'",
+                            "page_url": page_url,
+                            "page_title": page_title,
+                        })
+                    elif is_case_study:
+                        results.append({
+                            "candidate_name": cleaned_part,
+                            "relationship_claim": "CASE_STUDY",
+                            "product_claim": f"Mentioned in case study with {target_product}" if target_product.lower() in low_text else None,
+                            "supporting_text": f"Found in page title on case study page: '{page_title}'",
+                            "page_url": page_url,
+                            "page_title": page_title,
+                        })
+
+    # Check Customer Profile / Client Profile sections in text
+    m_profile = re.search(
+        r"(?:Customer|Client)\s+Profile\s*\n+([A-Z0-9][^\n\r:;!?]{2,60}?)\s+(?:is|was|are|operates|delivers|provides|specializes)",
+        text,
+        re.IGNORECASE,
+    )
+    if m_profile:
+        p_cand = clean_candidate_name(m_profile.group(1))
+        if p_cand and not is_self_reference(p_cand, target_company_name, urlparse(page_url).netloc):
+            p_snippet = text[m_profile.start():m_profile.start() + 350].replace("\n", " ").strip()
+            results.append({
+                "candidate_name": p_cand,
+                "relationship_claim": "CUSTOMER",
+                "product_claim": f"Mentioned with {target_product}" if target_product.lower() in p_snippet.lower() else None,
+                "supporting_text": p_snippet[:350],
+                "page_url": page_url,
+                "page_title": page_title,
+            })
+
+    # Check Partner statements e.g. "3rd Rock is a dedicated Jedox Partner"
+    m_partner_stmt = re.search(
+        r"\b(?:is\s+a\s+(?:dedicated|certified|authorized|premier|gold|silver|strategic)?\s*([A-Za-z0-9&.' -]{2,30}?)\s+(?:Partner|Reseller|Alliance))\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_partner_stmt:
+        part_cand = clean_candidate_name(m_partner_stmt.group(1))
+        if part_cand and not is_self_reference(part_cand, target_company_name, urlparse(page_url).netloc):
+            p_start = max(0, m_partner_stmt.start() - 40)
+            p_end = min(len(text), m_partner_stmt.end() + 100)
+            results.append({
+                "candidate_name": part_cand,
+                "relationship_claim": "PARTNER",
+                "product_claim": f"Partner entity for {part_cand}",
+                "supporting_text": text[p_start:p_end].replace("\n", " ").strip()[:350],
+                "page_url": page_url,
+                "page_title": page_title,
+            })
+
+    # Check Prior to implementation / Customer engagement statements
+    m_prior = re.search(
+        r"Prior\s+to\s+the\s+implementation,\s*([A-Z0-9][A-Za-z0-9&.,' -]{2,45}?)\s+faced\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_prior:
+        prior_cand = clean_candidate_name(m_prior.group(1))
+        if prior_cand and not is_self_reference(prior_cand, target_company_name, urlparse(page_url).netloc):
+            pr_start = max(0, m_prior.start() - 20)
+            pr_end = min(len(text), m_prior.end() + 200)
+            results.append({
+                "candidate_name": prior_cand,
+                "relationship_claim": "CASE_STUDY",
+                "product_claim": None,
+                "supporting_text": text[pr_start:pr_end].replace("\n", " ").strip()[:350],
+                "page_url": page_url,
+                "page_title": page_title,
+            })
+
+    m_eng = re.search(
+        r"\b([A-Z0-9][A-Za-z0-9&.,' -]{2,45}?)\s+(?:engaged|partnered with|selected)\s+(?:3rd\s+Rock|[A-Za-z0-9&.' -]+|us|our team)\s+to\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_eng:
+        eng_cand = clean_candidate_name(m_eng.group(1))
+        if eng_cand and not is_self_reference(eng_cand, target_company_name, urlparse(page_url).netloc):
+            e_start = max(0, m_eng.start() - 30)
+            e_end = min(len(text), m_eng.end() + 200)
+            results.append({
+                "candidate_name": eng_cand,
+                "relationship_claim": "CUSTOMER",
+                "product_claim": f"Mentioned with {target_product}" if target_product.lower() in text[e_start:e_end].lower() else None,
+                "supporting_text": text[e_start:e_end].replace("\n", " ").strip()[:350],
+                "page_url": page_url,
+                "page_title": page_title,
+            })
 
     for line in lines:
         cand_name: Optional[str] = None
@@ -353,11 +502,13 @@ def check_explicit_relationship(
     
     Never infers customer status from a name mention alone.
     """
-    cand_lower = candidate_name.lower()
+    cand_clean = normalize_unicode_punctuation(candidate_name)
+    cand_lower = cand_clean.lower()
 
     # Priority 1: Check if candidate is explicitly documented as a partner / reseller / vendor
     for text in all_snippets:
-        text_lower = text.lower()
+        norm_text = normalize_unicode_punctuation(text)
+        text_lower = norm_text.lower()
         if cand_lower not in text_lower:
             continue
         for kw in PARTNER_CONTEXT_KEYWORDS:
@@ -366,19 +517,23 @@ def check_explicit_relationship(
 
     # Priority 2: Check for explicit Customer / Case Study indicators
     for text in all_snippets:
-        text_lower = text.lower()
+        norm_text = normalize_unicode_punctuation(text)
+        text_lower = norm_text.lower()
         if cand_lower not in text_lower:
             continue
 
-        # Look for explicit story or testimonial attribution
-        for kw in ("case study", "customer story", "client story", "success story", "testimonial"):
+        # Look for explicit story, testimonial, or customer profile attribution
+        for kw in ("case study", "customer story", "client story", "success story", "testimonial", "customer profile", "client profile"):
             if kw in text_lower:
-                rel = RelationshipType.CASE_STUDY if "case study" in kw or "story" in kw else RelationshipType.TESTIMONIAL
+                rel = RelationshipType.CASE_STUDY if "case study" in kw or "story" in kw or "profile" in kw else RelationshipType.TESTIMONIAL
                 return True, rel, text
 
-        for kw in ("our customer", "our client", "trusted by", "selected by", "relies on", "deployed by"):
-            if kw in text_lower:
+        for kw in ("our customer", "our client", "the customer", "the client", "trusted by", "selected by", "relies on", "deployed by", "engaged with", "engaged"):
+            if kw in text_lower and any(v in text_lower for v in ("implementation", "solution", "support", "planning", "reporting", "budgeting", "project", "work", "deliver", "partnered")):
                 return True, RelationshipType.CUSTOMER, text
+
+        if re.search(r"\b(?:implementation|implemented|consolidation|deployment|consulting)\b", text_lower) and any(kw in text_lower for kw in ("challenge", "solution", "result", "customer", "client", "prior to", "hurdles")):
+            return True, RelationshipType.CASE_STUDY, text
 
         if re.search(r"\b(?:our\s+(?:\w+\s+)?(?:customers?|clients?)|(?:customers?|clients?)\s+" + re.escape(cand_lower) + r")\b", text_lower):
             return True, RelationshipType.CUSTOMER, text
@@ -399,12 +554,14 @@ def check_explicit_product_usage(
     
     Requires explicit usage assertion or verified case study detailing the product.
     """
-    cand_lower = candidate_name.lower()
-    prod_lower = target_product.lower()
+    cand_clean = normalize_unicode_punctuation(candidate_name)
+    cand_lower = cand_clean.lower()
+    prod_lower = normalize_unicode_punctuation(target_product).lower()
     verb_pattern = re.compile("|".join(PRODUCT_USAGE_VERBS), re.IGNORECASE)
 
     for text in all_snippets:
-        text_lower = text.lower()
+        norm_text = normalize_unicode_punctuation(text)
+        text_lower = norm_text.lower()
         if cand_lower not in text_lower or prod_lower not in text_lower:
             continue
 
@@ -414,7 +571,7 @@ def check_explicit_product_usage(
             return True, text
 
         # Condition 2: Co-occurrence with an active deployment/usage verb in the same sentence
-        sentences = re.split(r"[.!?\n]", text)
+        sentences = re.split(r"[.!?\n]", norm_text)
         for sentence in sentences:
             s_lower = sentence.lower()
             if cand_lower in s_lower and prod_lower in s_lower:
@@ -440,8 +597,19 @@ def verify_customer_candidate(
     all_snippets = [s.supporting_text for s in candidate_sources]
 
     # Collect additional relevant snippets across all crawled pages
-    cand_lower = candidate_name.lower()
+    cand_clean = normalize_unicode_punctuation(candidate_name)
+    cand_lower = cand_clean.lower()
     for page_url, page_title, page_text in all_page_texts:
+        norm_page_text = normalize_unicode_punctuation(page_text)
+        if cand_lower in norm_page_text.lower():
+            # Look for relevant context window around candidate name
+            lines = [line.strip() for line in norm_page_text.split("\n") if line.strip()]
+            for line in lines:
+                if cand_lower in line.lower() and len(line) > 20:
+                    all_snippets.append(line)
+            # Also include the full page text if candidate and target product co-occur
+            if target_product.lower() in norm_page_text.lower():
+                all_snippets.append(norm_page_text)
         if cand_lower in page_text.lower():
             # Extract sentence window
             for sentence in re.split(r"[.!?\n]+", page_text):
@@ -635,12 +803,24 @@ def verify_all_candidates_for_job(
 
         matched_key = None
         for key in candidates_by_name.keys():
-            if key == norm or is_fuzzy_name_match(norm, key, threshold=90.0):
+            if (
+                key == norm
+                or is_fuzzy_name_match(norm, key, threshold=75.0)
+                or (
+                    len(key.split()) >= 2
+                    and len(norm.split()) >= 2
+                    and key.split()[0] == norm.split()[0]
+                    and key.split()[-1] == norm.split()[-1]
+                )
+            ):
                 matched_key = key
                 break
 
         if matched_key:
             candidates_by_name[matched_key]["sources"].append(ref)
+            curr_name = candidates_by_name[matched_key]["candidate_name"]
+            if len(name) > len(curr_name) and not is_self_reference(name, target_company_name, urlparse(item["page_url"]).netloc):
+                candidates_by_name[matched_key]["candidate_name"] = name
         else:
             candidates_by_name[norm] = {
                 "candidate_name": name,
@@ -683,11 +863,20 @@ def verify_all_candidates_for_job(
     for p_url, p_title, p_text in all_page_texts:
         is_doc = any(p_url == d.document_url for d in documents)
         src_type = "DOCUMENT" if is_doc else "WEBPAGE"
+
+        # Identify candidate associated with this page
+        page_candidate = None
+        for sc in saved_candidates:
+            if any(s.source_url == p_url for s in sc.sources):
+                page_candidate = sc.candidate_name
+                break
+
         dms = extract_decision_makers_from_text(
             text=p_text,
             source_url=p_url,
             source_type=src_type,
             job_id=job_id,
+            associated_company=page_candidate,
             default_company=target_company_name,
         )
         raw_dms.extend(dms)
@@ -708,8 +897,15 @@ def verify_all_candidates_for_job(
         if dm.associated_company:
             norm_assoc = normalize_company_name(dm.associated_company)
             for sc in saved_candidates:
-                if sc.normalized_name == norm_assoc or is_fuzzy_name_match(norm_assoc, sc.normalized_name):
-                    dm.company_id = sc.id
+                if (
+                    sc.normalized_name == norm_assoc
+                    or is_fuzzy_name_match(norm_assoc, sc.normalized_name, threshold=75.0)
+                    or (norm_assoc and norm_assoc in sc.normalized_name)
+                    or (sc.normalized_name and sc.normalized_name in norm_assoc)
+                ):
+                    dm.candidate_company_id = sc.id
+                    dm.company_id = None
+                    dm.associated_company = sc.candidate_name
                     break
 
     saved_dms = database.save_decision_makers(deduped_dms, db_path=db_path)
@@ -721,11 +917,20 @@ def verify_all_candidates_for_job(
         doc_match = next((d for d in documents if d.document_url == p_url), None)
         f_type = doc_match.file_format if doc_match else "HTML"
         f_name = doc_match.file_name if doc_match else None
+
+        # Check candidate associated with this page
+        page_candidate = None
+        for sc in saved_candidates:
+            if any(s.source_url == p_url for s in sc.sources):
+                page_candidate = sc.candidate_name
+                break
+
         contacts = extract_public_contacts_from_text(
             text=p_text,
             source_url=p_url,
             file_type=f_type,
             file_name=f_name,
+            associated_company=page_candidate or target_company_name,
             job_id=job_id,
         )
         raw_contacts.extend(contacts)
@@ -745,16 +950,38 @@ def verify_all_candidates_for_job(
 
     deduped_contacts = list(contacts_by_val.values())
     for c in deduped_contacts:
-        if c.associated_company:
+        # If this is a general company contact on host domain, ensure associated_company is target_company_name
+        if target_company_name and c.source_url:
+            host_domain = urlparse(job.seed_url).netloc.lower().replace("www.", "") if job.seed_url else ""
+            source_domain = urlparse(c.source_url).netloc.lower().replace("www.", "") if c.source_url else ""
+            if source_domain == host_domain:
+                if (
+                    not c.person_name
+                    or any(c.contact_value.lower().startswith(p) for p in ("webadmin@", "info@", "contact@", "support@", "admin@", "sales@"))
+                    or c.job_title in ("Company Phone", "Company Address", "Company Contact Email")
+                ):
+                    c.associated_company = target_company_name
+                    if job and job.company_id:
+                        c.company_id = job.company_id
+                    c.candidate_company_id = None
+
+        if c.associated_company and c.associated_company != target_company_name:
             norm_assoc = normalize_company_name(c.associated_company)
             for sc in saved_candidates:
-                if sc.normalized_name == norm_assoc or is_fuzzy_name_match(norm_assoc, sc.normalized_name):
-                    c.company_id = sc.id
+                if sc.normalized_name == norm_assoc or is_fuzzy_name_match(norm_assoc, sc.normalized_name, threshold=75.0):
+                    c.candidate_company_id = sc.id
+                    c.company_id = None
+                    c.associated_company = sc.candidate_name
                     break
+        elif c.associated_company and c.associated_company == target_company_name:
+            if job and job.company_id:
+                c.company_id = job.company_id
+            c.candidate_company_id = None
+
         if c.person_name:
             norm_p = c.person_name.strip().lower()
             for dm in saved_dms:
-                if dm.full_name.strip().lower() == norm_p:
+                if dm.full_name and dm.full_name.strip().lower() == norm_p:
                     c.person_id = dm.id
                     break
 
