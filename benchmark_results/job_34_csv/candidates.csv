@@ -1,0 +1,242 @@
+Candidate Name,Normalized Name,Category,Classification,Relationship Type,Relationship Status,Target Product,Product Usage Status,Relationship Evidence,Product Usage Evidence,Supporting Source URL,Exact Supporting Quote,Confidence Score,Verification Rationale,Missing Evidence Reason,Sources Count
+Power BI,power bi,PRODUCT_OR_TECHNOLOGY,PARTIALLY_VERIFIED,PARTNER,CONFIRMED,Jedox,UNVERIFIED,"Convert data into actionable insights.
+Reimagine Business Reporting
+and Planning...
+Our Goals
+We deliver data warehousing, data modelling, visualizations, financial planning and consolidation solutions. We address all aspects of corporate performance management with a special focus on finance and reporting.
+We have rich experience in supporting our customers with their performance management journeys. We bring unique strategic approach to the disruptive innovation, treating them as journeys rather than onetime transformations.
+We believe that the Office of Finance is going to set the tone and propel the future technology changes. The Office of Finance has the best vantage point to drive the changes in process, tools and technologies.
+Cloud Analytics Modernization
+Mordernise your data infrastructure and analytics solutions to meet the business demands...
+Tool Agnostic Solution
+We take a solution-centric approach to our implementations, instead of a tool-based approach
+Data Science Acceleration
+Reduce the time to market by obtaining actionable insight from your data on-demand reliably
+Full Life Cycle Support
+We support you with all cycle of your analytics solution - strategy, implementation and support.
+Reporting & Analytics
+Better insights for actions allows business to spend more time on Analysis and less time on data gathering
+Data Preparation
+We deliver enterprise data models through data warehousing solutions to provide clean, integrated, high quality data to form the foundation of your analytics and reporting solutions.
+Business Insight
+We provide advanced visualizations with dashboards and the ability to perform ad-hoc analysis while enabling the business to send out pre-formatted reports.
+Financial Planning & Consolidation
+Driving accountability through smarter FP&A Solutions...
+Shrink the time cycles, finish the budgeting process faster and align your plans with the desired goals. Make better decisions based on what-if scenario analyses and driver based planning. Use collaboration tools to improvise accountability and planning accuracy
+Budget & Forecast
+50
+Years of Experience
+28
+Full Cycle Implementation
+2
+Offshore & Onsite Capacity
+Why 3rd Rock?
+We specialize in enterprise data solutions that drive smarter business decisions. From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik.
+Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise data management. We bridge the gap between IT and business users to create solutions that deliver real value.
+We are a technology agnostic implementation partner, so we build solutions on your platform of choice.
+Customer Testimonials
+We cover all aspect of solution lifecycle...
+Strategy
+Our team can work with you to develop a strategy and to take maximum advantage of the available technology in a cost-effective manner.
+We believe in providing unbiased advice, we work with your stakeholders and subject matter experts to understand requirements, evaluate solutions and to build a roadmap for implementation.
+Implementation
+Implementing and delivering effective solutions with an aim to impart maximum output with minimum Total Cost of Ownership (TOC).
+Effective engagement with the stakeholders right from the conceptualization, understanding of requirements, functional specifications leading to an effective design phase.
+Support
+After implementation, we work with you to transition your project to your in-house support team, or we can provide phone, online or onsite support on a long-term basis.
+We have a strong offshore presence to provide you with different support options including a 24/7 support.
+
+Email: webadmin@thirdrock.com.au
+Phone: +61 (02) 8007 3621",,https://www.thirdrock.com.au/,Data Modelling in Power BI with LLM,0.8,Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.,Formal partner/alliance documented; internal Jedox usage is unverified.,15
+IBM Planning Analytics/TM1,ibm planning analytics tm1,PRODUCT_OR_TECHNOLOGY,PARTIALLY_VERIFIED,TECHNOLOGY_PLATFORM,CONFIRMED,Jedox,UNVERIFIED,"like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in e",,https://www.thirdrock.com.au/,"like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in e",0.8,Relationship: TECHNOLOGY_PLATFORM (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.,Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.,1
+CCH Tagetik,cch tagetik,PRODUCT_OR_TECHNOLOGY,PARTIALLY_VERIFIED,TECHNOLOGY_PLATFORM,CONFIRMED,Jedox,UNVERIFIED,"osoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise dat",,https://www.thirdrock.com.au/,"osoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise dat",0.8,Relationship: TECHNOLOGY_PLATFORM (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.,Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.,2
+Microsoft Fabric,microsoft fabric,PRODUCT_OR_TECHNOLOGY,PARTIALLY_VERIFIED,PARTNER,CONFIRMED,Jedox,UNVERIFIED,"Convert data into actionable insights.
+Reimagine Business Reporting
+and Planning...
+Our Goals
+We deliver data warehousing, data modelling, visualizations, financial planning and consolidation solutions. We address all aspects of corporate performance management with a special focus on finance and reporting.
+We have rich experience in supporting our customers with their performance management journeys. We bring unique strategic approach to the disruptive innovation, treating them as journeys rather than onetime transformations.
+We believe that the Office of Finance is going to set the tone and propel the future technology changes. The Office of Finance has the best vantage point to drive the changes in process, tools and technologies.
+Cloud Analytics Modernization
+Mordernise your data infrastructure and analytics solutions to meet the business demands...
+Tool Agnostic Solution
+We take a solution-centric approach to our implementations, instead of a tool-based approach
+Data Science Acceleration
+Reduce the time to market by obtaining actionable insight from your data on-demand reliably
+Full Life Cycle Support
+We support you with all cycle of your analytics solution - strategy, implementation and support.
+Reporting & Analytics
+Better insights for actions allows business to spend more time on Analysis and less time on data gathering
+Data Preparation
+We deliver enterprise data models through data warehousing solutions to provide clean, integrated, high quality data to form the foundation of your analytics and reporting solutions.
+Business Insight
+We provide advanced visualizations with dashboards and the ability to perform ad-hoc analysis while enabling the business to send out pre-formatted reports.
+Financial Planning & Consolidation
+Driving accountability through smarter FP&A Solutions...
+Shrink the time cycles, finish the budgeting process faster and align your plans with the desired goals. Make better decisions based on what-if scenario analyses and driver based planning. Use collaboration tools to improvise accountability and planning accuracy
+Budget & Forecast
+50
+Years of Experience
+28
+Full Cycle Implementation
+2
+Offshore & Onsite Capacity
+Why 3rd Rock?
+We specialize in enterprise data solutions that drive smarter business decisions. From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik.
+Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise data management. We bridge the gap between IT and business users to create solutions that deliver real value.
+We are a technology agnostic implementation partner, so we build solutions on your platform of choice.
+Customer Testimonials
+We cover all aspect of solution lifecycle...
+Strategy
+Our team can work with you to develop a strategy and to take maximum advantage of the available technology in a cost-effective manner.
+We believe in providing unbiased advice, we work with your stakeholders and subject matter experts to understand requirements, evaluate solutions and to build a roadmap for implementation.
+Implementation
+Implementing and delivering effective solutions with an aim to impart maximum output with minimum Total Cost of Ownership (TOC).
+Effective engagement with the stakeholders right from the conceptualization, understanding of requirements, functional specifications leading to an effective design phase.
+Support
+After implementation, we work with you to transition your project to your in-house support team, or we can provide phone, online or onsite support on a long-term basis.
+We have a strong offshore presence to provide you with different support options including a 24/7 support.
+
+Email: webadmin@thirdrock.com.au
+Phone: +61 (02) 8007 3621",,https://www.thirdrock.com.au/,"their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brin",0.8,Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.,Formal partner/alliance documented; internal Jedox usage is unverified.,12
+Jedox,jedox,PRODUCT_OR_TECHNOLOGY,PARTIALLY_VERIFIED,PARTNER,CONFIRMED,Jedox,UNVERIFIED,Found in page title on partner page: 'Jedox | 3rd Rock',,https://www.thirdrock.com.au/jedox-partner,Found in page title on partner page: 'Jedox | 3rd Rock',0.8,Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.,Formal partner/alliance documented; internal Jedox usage is unverified.,5
+SAP,sap,PRODUCT_OR_TECHNOLOGY,PARTIALLY_VERIFIED,CASE_STUDY,CONFIRMED,Jedox,CONFIRMED,"Enhanced decision-making for national nonprofit
+Starlight Children's Foundation unleashes the potential of FP&A to drive innovation.
+Customer Profile
+Starlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions.
+They are the broadest reaching children's charity in Australia, with a wide range of programs to give seriously ill children a break from their medical treatment.
+An organization focused on innovation; Starlight made the decision to invest in an Enterprise Performance Management (EPM) solution to make better business decisions.
+3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance.
+Business Challenges
+Struggling with a reliance on Excel for planning and reporting, Starlight Children's Foundation needed to both support Finance and enable those who sit outside the Finance function with unified data and more accurate planning.
+Starlight's key goal was to enhance their decision-making process. Aiming to
+do this while increasing their internal operational efficiencies with a scalable
+solution, the need for a modern planning & budgeting process was quickly
+recognized as a key imperative.
+First implemented to replicate their existing legacy planning and reporting,users realized a clear lack of details and reporting was found to be hard to understand with disparate data and complex roll-ups.
+Their key objectives were
+- Significant time reduction in data gathering – releasing time for analysis,
+- Reduced cycle time for budgeting, forecasting and financial close processes,
+- Improve forecast accuracy,
+- Minimise risk of errors due to manual processing and consolidation,
+- Removed reliance on ""off-line"" Excel spreadsheets
+Enabling innovation to support better business decisions
+3rd Rock engaged with the Customer to identify, design, and implement a solution that met the Customer requirements, while also adhering to the budget and quality parameters.
+Starlight's key goal was to enhance their decision-making process. Aiming to
+do this while increasing their internal operational efficiencies with a scalable
+solution, the need for a modern planning & budgeting process was quickly
+recognized as a key imperative.
+They began their finance transformation journey with a newly created FP&A role
+in 2019. They needed to support finance directly and help build financial
+capabilities for team members who sit outside the finance function. Previously
+using Excel, they needed a scalable solution with broader capabilities.
+Results & Outcomes
+Flexible, full suite reporting with complete oversight & governance.
+""This solution is great for cross functional relationships and collaboration. Now we are just flying because we can drill down, drill across, and everyone can see what they are responsible for in the organization. We did not have that before.""
+- Anna Schell ( FP&A Starlight)
+Starlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.. This meant adding to and restructuring data in source systems. 3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting.
+Today, a full suite of reporting is done through the solution. Cost centers and program managers can easily see data they need when they need it with greater flexibility, which their previous solution lacked. The solution implementation resulted in significant time reduction in data gathering - making more time for analysis. This has also resulted in reduction in cycle time for budgeting and reporting processes.
+The process and calculation are now centrally governed and removing Excel dependencies has minimized the risk of errors due to manual processing; and remove reliance on ""off-line"" excel spreadsheets.  The solution framework allows the customer to work on a collaborative environment with centralized data storage, centrally governed calculation, and authorization to plan and report data real-time. Starlight's capacity to perform analytics and ad-hoc analysis has improved considerably.
+From disconnected to empowered, they are able to:
+- Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud,
+- Model detailed workforce planning and program costing without complex spreadsheets,
+- Perform 'what-if' analysis on the data,
+- Have complete oversight of business financial and fundraising position for the coming years.
+With their Finance team driving adoption of Jedox, Starlight is focused on minimizing mundane reporting tasks so they can focus on analysis, story-telling and value-add tasks. Then remove the next sentence about the Board.
+
+Email: webadmin@thirdrock.com.au
+Phone: +61 (02) 8007 3621","Enhanced decision-making for national nonprofit
+Starlight Children's Foundation unleashes the potential of FP&A to drive innovation.
+Customer Profile
+Starlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions.
+They are the broadest reaching children's charity in Australia, with a wide range of programs to give seriously ill children a break from their medical treatment.
+An organization focused on innovation; Starlight made the decision to invest in an Enterprise Performance Management (EPM) solution to make better business decisions.
+3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance.
+Business Challenges
+Struggling with a reliance on Excel for planning and reporting, Starlight Children's Foundation needed to both support Finance and enable those who sit outside the Finance function with unified data and more accurate planning.
+Starlight's key goal was to enhance their decision-making process. Aiming to
+do this while increasing their internal operational efficiencies with a scalable
+solution, the need for a modern planning & budgeting process was quickly
+recognized as a key imperative.
+First implemented to replicate their existing legacy planning and reporting,users realized a clear lack of details and reporting was found to be hard to understand with disparate data and complex roll-ups.
+Their key objectives were
+- Significant time reduction in data gathering – releasing time for analysis,
+- Reduced cycle time for budgeting, forecasting and financial close processes,
+- Improve forecast accuracy,
+- Minimise risk of errors due to manual processing and consolidation,
+- Removed reliance on ""off-line"" Excel spreadsheets
+Enabling innovation to support better business decisions
+3rd Rock engaged with the Customer to identify, design, and implement a solution that met the Customer requirements, while also adhering to the budget and quality parameters.
+Starlight's key goal was to enhance their decision-making process. Aiming to
+do this while increasing their internal operational efficiencies with a scalable
+solution, the need for a modern planning & budgeting process was quickly
+recognized as a key imperative.
+They began their finance transformation journey with a newly created FP&A role
+in 2019. They needed to support finance directly and help build financial
+capabilities for team members who sit outside the finance function. Previously
+using Excel, they needed a scalable solution with broader capabilities.
+Results & Outcomes
+Flexible, full suite reporting with complete oversight & governance.
+""This solution is great for cross functional relationships and collaboration. Now we are just flying because we can drill down, drill across, and everyone can see what they are responsible for in the organization. We did not have that before.""
+- Anna Schell ( FP&A Starlight)
+Starlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.. This meant adding to and restructuring data in source systems. 3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting.
+Today, a full suite of reporting is done through the solution. Cost centers and program managers can easily see data they need when they need it with greater flexibility, which their previous solution lacked. The solution implementation resulted in significant time reduction in data gathering - making more time for analysis. This has also resulted in reduction in cycle time for budgeting and reporting processes.
+The process and calculation are now centrally governed and removing Excel dependencies has minimized the risk of errors due to manual processing; and remove reliance on ""off-line"" excel spreadsheets.  The solution framework allows the customer to work on a collaborative environment with centralized data storage, centrally governed calculation, and authorization to plan and report data real-time. Starlight's capacity to perform analytics and ad-hoc analysis has improved considerably.
+From disconnected to empowered, they are able to:
+- Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud,
+- Model detailed workforce planning and program costing without complex spreadsheets,
+- Perform 'what-if' analysis on the data,
+- Have complete oversight of business financial and fundraising position for the coming years.
+With their Finance team driving adoption of Jedox, Starlight is focused on minimizing mundane reporting tasks so they can focus on analysis, story-telling and value-add tasks. Then remove the next sentence about the Board.
+
+Email: webadmin@thirdrock.com.au
+Phone: +61 (02) 8007 3621",https://www.thirdrock.com.au/analytics,"tegration to leading ERP solutions like SAP, XERO, Sales Force solutions We reduce errors (and error-prone redundant data entry), while improving data integrity. W",0.8,Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: CONFIRMED. Candidate classified as PRODUCT_OR_TECHNOLOGY rather than a confirmed corporate entity.,Candidate classified as PRODUCT_OR_TECHNOLOGY rather than a confirmed corporate entity.,6
+Microsoft,microsoft,NAMED_COMPANY,PARTIALLY_VERIFIED,PARTNER,CONFIRMED,Jedox,UNVERIFIED,Found in page title on partner page: 'Microsoft | 3rd Rock Business Solutions',,https://www.thirdrock.com.au/partner-microsoft,Found in page title on partner page: 'Microsoft | 3rd Rock Business Solutions',0.8,Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.,Formal partner/alliance documented; internal Jedox usage is unverified.,8
+Steadfast Group Limited,steadfast,NAMED_COMPANY,PARTIALLY_VERIFIED,CASE_STUDY,CONFIRMED,Jedox,UNVERIFIED,Found in page title on case study page: 'Steadfast Group Limited | 3rd Rock',,https://www.thirdrock.com.au/steadfast,Found in page title on case study page: 'Steadfast Group Limited | 3rd Rock',0.8,"Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.","Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.",2
+Starlight Children's Foundation,starlight children s foundation,NAMED_COMPANY,CONFIRMED,CASE_STUDY,CONFIRMED,Jedox,CONFIRMED,"Customer Profile Starlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions. They are the broadest reaching chi","Enhanced decision-making for national nonprofit
+Starlight Children's Foundation unleashes the potential of FP&A to drive innovation.
+Customer Profile
+Starlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions.
+They are the broadest reaching children's charity in Australia, with a wide range of programs to give seriously ill children a break from their medical treatment.
+An organization focused on innovation; Starlight made the decision to invest in an Enterprise Performance Management (EPM) solution to make better business decisions.
+3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance.
+Business Challenges
+Struggling with a reliance on Excel for planning and reporting, Starlight Children's Foundation needed to both support Finance and enable those who sit outside the Finance function with unified data and more accurate planning.
+Starlight's key goal was to enhance their decision-making process. Aiming to
+do this while increasing their internal operational efficiencies with a scalable
+solution, the need for a modern planning & budgeting process was quickly
+recognized as a key imperative.
+First implemented to replicate their existing legacy planning and reporting,users realized a clear lack of details and reporting was found to be hard to understand with disparate data and complex roll-ups.
+Their key objectives were
+- Significant time reduction in data gathering – releasing time for analysis,
+- Reduced cycle time for budgeting, forecasting and financial close processes,
+- Improve forecast accuracy,
+- Minimise risk of errors due to manual processing and consolidation,
+- Removed reliance on ""off-line"" Excel spreadsheets
+Enabling innovation to support better business decisions
+3rd Rock engaged with the Customer to identify, design, and implement a solution that met the Customer requirements, while also adhering to the budget and quality parameters.
+Starlight's key goal was to enhance their decision-making process. Aiming to
+do this while increasing their internal operational efficiencies with a scalable
+solution, the need for a modern planning & budgeting process was quickly
+recognized as a key imperative.
+They began their finance transformation journey with a newly created FP&A role
+in 2019. They needed to support finance directly and help build financial
+capabilities for team members who sit outside the finance function. Previously
+using Excel, they needed a scalable solution with broader capabilities.
+Results & Outcomes
+Flexible, full suite reporting with complete oversight & governance.
+""This solution is great for cross functional relationships and collaboration. Now we are just flying because we can drill down, drill across, and everyone can see what they are responsible for in the organization. We did not have that before.""
+- Anna Schell ( FP&A Starlight)
+Starlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.. This meant adding to and restructuring data in source systems. 3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting.
+Today, a full suite of reporting is done through the solution. Cost centers and program managers can easily see data they need when they need it with greater flexibility, which their previous solution lacked. The solution implementation resulted in significant time reduction in data gathering - making more time for analysis. This has also resulted in reduction in cycle time for budgeting and reporting processes.
+The process and calculation are now centrally governed and removing Excel dependencies has minimized the risk of errors due to manual processing; and remove reliance on ""off-line"" excel spreadsheets.  The solution framework allows the customer to work on a collaborative environment with centralized data storage, centrally governed calculation, and authorization to plan and report data real-time. Starlight's capacity to perform analytics and ad-hoc analysis has improved considerably.
+From disconnected to empowered, they are able to:
+- Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud,
+- Model detailed workforce planning and program costing without complex spreadsheets,
+- Perform 'what-if' analysis on the data,
+- Have complete oversight of business financial and fundraising position for the coming years.
+With their Finance team driving adoption of Jedox, Starlight is focused on minimizing mundane reporting tasks so they can focus on analysis, story-telling and value-add tasks. Then remove the next sentence about the Board.
+
+Email: webadmin@thirdrock.com.au
+Phone: +61 (02) 8007 3621",https://www.thirdrock.com.au/starlight,Found in page title on case study page: 'Starlight Foundation | 3rd Rock Business Solutions',0.95,Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: CONFIRMED. Customer relationship and Jedox usage both verified with source evidence quotes.,Customer relationship and Jedox usage both verified with source evidence quotes.,2
+Ball & Doggett,ball doggett,NAMED_COMPANY,PARTIALLY_VERIFIED,CASE_STUDY,CONFIRMED,Jedox,UNVERIFIED,Found in page title on case study page: 'Ball & Doggett | 3rd Rock Business Solutions',,https://www.thirdrock.com.au/ball-and-doggett,Found in page title on case study page: 'Ball & Doggett | 3rd Rock Business Solutions',0.8,"Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.","Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.",2

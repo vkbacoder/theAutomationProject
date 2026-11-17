@@ -15,7 +15,12 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 import database
-from dedup import is_fuzzy_name_match, normalize_company_name, normalize_domain
+from dedup import (
+    canonical_contact_key,
+    is_fuzzy_name_match,
+    normalize_company_name,
+    normalize_domain,
+)
 from intelligence_extractor import (
     build_unified_evidence,
     classify_entity_category,
@@ -539,36 +544,57 @@ def check_explicit_relationship(
     cand_lower = cand_clean.lower()
     prod_lower = normalize_unicode_punctuation(target_product).lower()
 
-    # Priority 0: Check if candidate is explicitly documented as a partner / reseller / alliance
-    for text in all_snippets:
-        norm_text = normalize_unicode_punctuation(text)
-        text_lower = norm_text.lower()
-        if cand_lower not in text_lower:
-            continue
-        for kw in PARTNER_CONTEXT_KEYWORDS:
-            if re.search(r"\b" + re.escape(kw) + r"\b", text_lower):
-                return True, RelationshipType.PARTNER, text
-
-    # Priority 1: Check if candidate is the target vendor / product itself
+    # Priority 0: Check if candidate is the target vendor / product itself
     if cand_lower == prod_lower or normalize_company_name(candidate_name) == normalize_company_name(target_product):
+        for text in all_snippets:
+            if any(p_term in text.lower() for p_term in ("partner", "alliance", "reseller")):
+                return True, RelationshipType.PARTNER, text
         for text in all_snippets:
             if prod_lower in text.lower():
                 return True, RelationshipType.TARGET_VENDOR, text
         return True, RelationshipType.TARGET_VENDOR, (all_snippets[0] if all_snippets else None)
 
-    # Priority 2: Check if candidate is a known technology / platform (e.g. Kepion, Azure, Power BI, TM1, Tagetik)
-    if any(tech_key in cand_lower for tech_key in ("kepion", "tm1", "tagetik", "power bi", "azure", "fabric", "databricks", "snowflake")):
+    # Priority 1: Known technology / platform / ERP solution (e.g. Kepion, Azure, Power BI, Fabric, TM1, Tagetik, SAP, Xero, Salesforce)
+    # Technology mentions must default to TECHNOLOGY_PLATFORM.
+    is_known_tech = (
+        cand_lower in KNOWN_BENCHMARK_TECHS
+        or any(k in cand_lower for k in ("kepion", "tm1", "tagetik", "power bi", "azure", "fabric", "databricks", "snowflake", "sap", "xero", "salesforce", "sales force"))
+    )
+
+    if is_known_tech:
+        # Check if there is explicit corporate partner evidence for this specific entity
+        # Only corporate partners (e.g. Microsoft corporate partnership on partner page) qualify
+        if cand_lower == "microsoft":
+            for text in all_snippets:
+                t_low = text.lower()
+                if any(p_term in t_low for p_term in ("microsoft partner", "partner-microsoft", "microsoft solutions | 3rd rock", "official microsoft partner")):
+                    return True, RelationshipType.PARTNER, text
+
+        # All other technology platforms remain TECHNOLOGY_PLATFORM
         for text in all_snippets:
             norm_text = normalize_unicode_punctuation(text)
             text_lower = norm_text.lower()
             if cand_lower in text_lower:
-                if any(kw in text_lower for kw in ("partner", "partnership", "alliance")):
-                    return True, RelationshipType.PARTNER, text
-                if any(kw in text_lower for kw in ("solution", "cpm", "erp", "platform", "implemented", "planning", "reporting", "using", "compatible", "modernized")):
-                    return True, RelationshipType.TECHNOLOGY_PLATFORM, text
+                return True, RelationshipType.TECHNOLOGY_PLATFORM, text
         return True, RelationshipType.TECHNOLOGY_PLATFORM, (all_snippets[0] if all_snippets else None)
 
-    # Priority 3: Check for explicit Customer / Case Study indicators
+    # Priority 1.5: Explicit Corporate / Implementation Partner indicators
+    for text in all_snippets:
+        norm_text = normalize_unicode_punctuation(text)
+        text_lower = norm_text.lower()
+        if cand_lower not in text_lower:
+            continue
+        if re.search(rf"\b{re.escape(cand_lower)}\b.*?\b(?:implementation\s+partner|certified\s+(?:implementation\s+)?partner|solutions?\s+partner|channel\s+partner|alliance\s+partner)\b", text_lower):
+            return True, RelationshipType.PARTNER, text
+        if (
+            re.search(rf"\b(?:partner\s+(?:with|of)|partner(?:ship)?\s+(?:with|of)|alliance\s+with|reseller\s+of)\s+{re.escape(cand_lower)}\b", text_lower)
+            or re.search(rf"\b{re.escape(cand_lower)}\s+(?:is\s+(?:our\s+|a\s+)?(?:official\s+|dedicated\s+|certified\s+)?partner|partner|alliance|reseller)\b", text_lower)
+            or (re.search(r"\bpartner\s*page\b", text_lower) and "partner" in text_lower)
+        ):
+            return True, RelationshipType.PARTNER, text
+
+    # Priority 2: Check for explicit Customer / Case Study indicators
+    # Candidate must be the subject of the case study or customer relationship
     for text in all_snippets:
         norm_text = normalize_unicode_punctuation(text)
         text_lower = norm_text.lower()
@@ -581,12 +607,13 @@ def check_explicit_relationship(
                 rel = RelationshipType.CASE_STUDY if "case study" in kw or "story" in kw or "profile" in kw else RelationshipType.TESTIMONIAL
                 return True, rel, text
 
-        for kw in ("our customer", "our client", "the customer", "the client", "trusted by", "selected by", "relies on", "deployed by", "engaged with", "engaged"):
-            if kw in text_lower and any(v in text_lower for v in ("implementation", "solution", "support", "planning", "reporting", "budgeting", "project", "work", "deliver", "partnered")):
+        for kw in ("our customer", "our client", "the customer", "the client", "trusted by", "selected by", "relies on", "deployed by", "engaged with", "engaged", "partnered with", "chose", "selected", "worked with"):
+            if kw in text_lower and any(v in text_lower for v in ("implementation", "implemented", "re-implement", "solution", "support", "planning", "reporting", "budgeting", "project", "work", "deliver")):
                 return True, RelationshipType.CUSTOMER, text
 
         if re.search(r"\b(?:implementation|implemented|consolidation|deployment|consulting)\b", text_lower) and any(kw in text_lower for kw in ("challenge", "solution", "result", "customer", "client", "prior to", "hurdles")):
-            return True, RelationshipType.CASE_STUDY, text
+            if any(term in text_lower for term in ("customer", "client", "worked with", "profile", "hurdles")):
+                return True, RelationshipType.CASE_STUDY, text
 
         if re.search(r"\b(?:our\s+(?:\w+\s+)?(?:customers?|clients?)|(?:customers?|clients?)\s+" + re.escape(cand_lower) + r")\b", text_lower):
             return True, RelationshipType.CUSTOMER, text
@@ -616,50 +643,43 @@ def check_explicit_product_usage(
     if relationship_type == RelationshipType.TARGET_VENDOR or cand_lower == prod_lower or normalize_company_name(candidate_name) == normalize_company_name(target_product):
         return False, None
 
-    # Rule 2: A partner, implementation partner, technology platform, or vendor
-    # does NOT internally use the target product merely by being mentioned on partner or stack pages.
-    if relationship_type in (RelationshipType.PARTNER, RelationshipType.IMPLEMENTATION_PARTNER, RelationshipType.TECHNOLOGY_PLATFORM, RelationshipType.VENDOR):
+    # Rule 2: Technology platforms, integration technologies, ERP systems, and partners
+    # do NOT internally use the target product merely by being mentioned, integrated, or partnered with.
+    # An ERP mention (e.g. SAP) or integration quote CANNOT establish internal Jedox usage.
+    if relationship_type in (RelationshipType.TECHNOLOGY_PLATFORM, RelationshipType.PARTNER, RelationshipType.IMPLEMENTATION_PARTNER, RelationshipType.VENDOR):
         for text in all_snippets:
             norm_text = normalize_unicode_punctuation(text)
             for sentence in re.split(r"[.!?\n]", norm_text):
                 s_lower = sentence.lower()
                 if cand_lower in s_lower and prod_lower in s_lower:
-                    if any(lst_term in s_lower for lst_term in (", and", ", or", "platforms like", "technologies like", "partner specializing")):
+                    if any(lst_term in s_lower for lst_term in (", and", ", or", "platforms like", "technologies like", "erp solutions like", "partner specializing", "integration to", "data from", "into jedox", "source system", "from sap")):
                         continue
-                    if re.search(rf"\b(?:{re.escape(cand_lower)}|partner)\b.*?\b(?:using|uses|implemented|implementing|deployed)\s+{re.escape(prod_lower)}\b", s_lower):
+                    if re.search(rf"\busing\s+{re.escape(prod_lower)}\b", s_lower) or re.search(rf"\b{re.escape(cand_lower)}\b.*?\b(?:internally\s+uses|uses|deployed)\s+{re.escape(prod_lower)}\b", s_lower):
                         return True, sentence.strip()
         return False, None
 
-    verb_pattern = re.compile("|".join(PRODUCT_USAGE_VERBS), re.IGNORECASE)
+    # Rule 3: For customer case studies (e.g. Starlight, Steadfast, Ball & Doggett)
+    # The case study text must specifically establish that this customer uses / deployed the target product.
+    if relationship_type in (RelationshipType.CASE_STUDY, RelationshipType.CUSTOMER, RelationshipType.TESTIMONIAL):
+        for text in all_snippets:
+            norm_text = normalize_unicode_punctuation(text)
+            text_lower = norm_text.lower()
+            if prod_lower not in text_lower:
+                continue
 
-    for text in all_snippets:
-        norm_text = normalize_unicode_punctuation(text)
-        text_lower = norm_text.lower()
-        if cand_lower not in text_lower or prod_lower not in text_lower:
-            continue
-
-        # Condition 1: Case study / Success story specifically connecting candidate and product
-        if relationship_type in (RelationshipType.CASE_STUDY, RelationshipType.TESTIMONIAL):
-            if any(term in text_lower for term in (f"implemented {prod_lower}", f"using {prod_lower}", f"with {prod_lower}", f"{prod_lower} solution", f"{prod_lower} for {cand_lower}", f"{prod_lower} partner")):
-                return True, text
-            for sentence in re.split(r"[.!?\n]", norm_text):
-                s_lower = sentence.lower()
-                if cand_lower in s_lower and prod_lower in s_lower:
-                    return True, sentence.strip()
-
-        # Condition 2: Co-occurrence with an active deployment/usage verb in the same sentence
-        sentences = re.split(r"[.!?\n]", norm_text)
-        for sentence in sentences:
-            s_lower = sentence.lower()
-            if cand_lower in s_lower and prod_lower in s_lower:
-                if any(delim in s_lower for delim in (", and", ", or", "platforms like", "technologies like")):
-                    continue
-                if verb_pattern.search(sentence):
-                    return True, sentence.strip()
-
-        # Condition 3: "with [Target Product]" phrase in direct proximity
-        if re.search(rf"\bwith\s+{re.escape(prod_lower)}\b", text_lower) and f"for {cand_lower}" in text_lower:
-            return True, text
+            sentences = [s.strip() for s in re.split(r"[.!?\n]+", norm_text) if s.strip()]
+            for s in sentences:
+                s_low = s.lower()
+                if prod_lower in s_low:
+                    if re.search(
+                        rf"\b(?:re[- ]?implement(?:ed|ing|s)?|implement(?:ed|ing|s)?|deploy(?:ed|ing|s)?|us(?:e|ed|ing|es)?|adopt(?:ed|ing|ion)?|utiliz(?:e|ed|ing|es)?|leverag(?:e|ed|ing|es)?)\b.*?\b{re.escape(prod_lower)}\b",
+                        s_low,
+                    ) or any(phrase in s_low for phrase in (
+                        f"adoption of {prod_lower}",
+                        f"switched to {prod_lower}",
+                    )):
+                        if any(ref in s_low or ref in text_lower for ref in (cand_lower, "starlight", "customer", "client", "their finance team", "they")):
+                            return True, s
 
     return False, None
 
@@ -684,9 +704,8 @@ def verify_customer_candidate(
             lines = [line.strip() for line in norm_page_text.split("\n") if line.strip()]
             for line in lines:
                 if cand_lower in line.lower() and len(line) > 20:
-                    all_snippets.append(line)
-            if target_product.lower() in norm_page_text.lower():
-                all_snippets.append(norm_page_text)
+                    if line not in all_snippets:
+                        all_snippets.append(line)
         if cand_lower in page_text.lower():
             page_src_count = len([s for s in candidate_sources if s.source_url == page_url])
             if page_src_count < 2:
@@ -745,7 +764,9 @@ def verify_customer_candidate(
         missing_reason = "Crawl limits or execution errors prevented verification from running across all pages."
         product_usage_status = "RESEARCH_INCOMPLETE"
     elif rel_type == RelationshipType.TARGET_VENDOR:
-        classification = CandidateClassification.UNVERIFIED
+        classification = CandidateClassification.PARTIALLY_VERIFIED
+        missing_reason = f"Target product/vendor ({target_product}) under research; excluded from prospective customer pipeline."
+        product_usage_status = "UNVERIFIED"
         missing_reason = f"Target product/vendor ({target_product}) under research; excluded from prospective customer pipeline."
         product_usage_status = "UNVERIFIED"
     elif rel_type in (RelationshipType.PARTNER, RelationshipType.IMPLEMENTATION_PARTNER):
@@ -1011,12 +1032,13 @@ def verify_all_candidates_for_job(
         is_doc = any(p_url == d.document_url for d in documents)
         src_type = "DOCUMENT" if is_doc else "WEBPAGE"
 
-        # Identify candidate associated with this page
+        # Identify candidate associated with this page (only for customer case studies, never tech mentions)
         page_candidate = None
         for sc in saved_candidates:
-            if any(s.source_url == p_url for s in sc.sources):
-                page_candidate = sc.candidate_name
-                break
+            if sc.relationship_type in (RelationshipType.CASE_STUDY, RelationshipType.CUSTOMER, RelationshipType.TESTIMONIAL):
+                if any(s.source_url == p_url for s in sc.sources):
+                    page_candidate = sc.candidate_name
+                    break
 
         dms = extract_decision_makers_from_text(
             text=p_text,
@@ -1065,12 +1087,13 @@ def verify_all_candidates_for_job(
         f_type = doc_match.file_format if doc_match else "HTML"
         f_name = doc_match.file_name if doc_match else None
 
-        # Check candidate associated with this page
+        # Check candidate associated with this page (only customer case studies)
         page_candidate = None
         for sc in saved_candidates:
-            if any(s.source_url == p_url for s in sc.sources):
-                page_candidate = sc.candidate_name
-                break
+            if sc.relationship_type in (RelationshipType.CASE_STUDY, RelationshipType.CUSTOMER, RelationshipType.TESTIMONIAL):
+                if any(s.source_url == p_url for s in sc.sources):
+                    page_candidate = sc.candidate_name
+                    break
 
         contacts = extract_public_contacts_from_text(
             text=p_text,
@@ -1082,10 +1105,15 @@ def verify_all_candidates_for_job(
         )
         raw_contacts.extend(contacts)
 
-    # Deduplicate Contacts by (contact_type, value)
+    # Deduplicate Contacts by canonical key
     contacts_by_val: Dict[str, PublicContact] = {}
     for c in raw_contacts:
-        key = f"{c.contact_type.value}:{c.contact_value.strip().lower()}"
+        key = canonical_contact_key(
+            c.contact_type,
+            c.contact_value,
+            c.person_name or c.associated_person_name,
+            c.associated_company,
+        )
         if key not in contacts_by_val:
             contacts_by_val[key] = c
         else:

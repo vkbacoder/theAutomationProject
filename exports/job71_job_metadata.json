@@ -1,0 +1,66 @@
+{
+  "job_id": 71,
+  "target_company": {
+    "name": "Ntaw",
+    "domain": "ntaw.com.au",
+    "company_id": 139,
+    "website_url": "https://ntaw.com.au/",
+    "industry": null,
+    "country": null,
+    "city": null,
+    "research_status": "PENDING",
+    "verification_status": "UNVERIFIED"
+  },
+  "seed_url": "https://ntaw.com.au/",
+  "allowed_domains": [
+    "ntaw.com.au"
+  ],
+  "workflow": "GENERAL",
+  "status": "COMPLETED",
+  "cancellation_requested": false,
+  "objective": null,
+  "target_product": null,
+  "crawl_configuration": {
+    "max_depth": 2,
+    "max_pages": 20,
+    "max_pages_per_domain": 20
+  },
+  "execution_statistics": {
+    "pages_crawled_counter": 20,
+    "pages_failed_counter": 1,
+    "discovered_urls_counter": 69,
+    "worker_pid": 33336
+  },
+  "timestamps": {
+    "created_at": "2026-10-26T11:07:12.035521+00:00",
+    "started_at": "2026-10-26T11:07:12.286854+00:00",
+    "finished_at": "2026-10-26T11:14:09.858174+00:00"
+  },
+  "metrics": {
+    "requests_attempted": 36,
+    "responses_downloaded": 32,
+    "unique_pages_saved": 20,
+    "useful_pages": 20,
+    "empty_or_thin_pages": 0,
+    "duplicate_requests_filtered": 456,
+    "failed_requests": 2,
+    "total_response_bytes": 1291599,
+    "total_decompressed_bytes": 2945729,
+    "crawl_duration_sec": 220.21,
+    "evidence_records_created": 20,
+    "final_outcome": "COMPLETED",
+    "stop_reason": "max_pages_reached"
+  },
+  "error_message": null,
+  "persisted_dataset_counts": {
+    "crawled_pages_total": 21,
+    "crawled_pages_success": 20,
+    "crawled_pages_failed": 1,
+    "discovered_entities_candidates": 9,
+    "decision_makers": 0,
+    "public_contacts": 6,
+    "discovered_documents": 0,
+    "unified_evidence_records": 20,
+    "scrape_evidence_records": 20
+  }
+}

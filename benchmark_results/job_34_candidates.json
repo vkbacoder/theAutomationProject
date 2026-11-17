@@ -1,0 +1,772 @@
+[
+  {
+    "id": 133,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Power BI",
+    "normalized_name": "power bi",
+    "target_product": "Jedox",
+    "relationship_type": "PARTNER",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "PRODUCT_OR_TECHNOLOGY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": false,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "Data Modelling in Power BI with LLM",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.087942+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/partner-microsoft",
+        "page_title": "Microsoft | 3rd Rock Business Solutions",
+        "supporting_text": "Why Power BI?",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.089941+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "Data Modelling in Power BI with LLM",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091038+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-the-brain-drain-an-ai-knowledge-engine-for-the-organization",
+        "page_title": "Beyond the \"Brain Drain\": An AI Knowledge Engine for the Organization",
+        "supporting_text": "e ground up, leveraging well-documented Power BI requirements to save time.\" Why This Matters for the Organization This is not just an onboarding tool; it is the new wa",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091225+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/blogs",
+        "page_title": "Blogs | 3rd Rock",
+        "supporting_text": "Data Modelling in Power BI with LLM",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091402+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/escaping-excel-hell-why-integrated-governance-is-the-future-of-reporting",
+        "page_title": "Beyond the Spreadsheet: Excel Hell to Governed Agility",
+        "supporting_text": "orting, when powered by a platform like Power BI where metric definitions are centrally governed, removes the primary incentive for users to retreat into spreadsheets.",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.094221+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-insight-mastering-write-back-and-action-in-power-bi",
+        "page_title": "Beyond Insight: Mastering Write-Back and Action in Power BI",
+        "supporting_text": "ght: Mastering Write-Back and Action in Power BI",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.094574+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/blogs/hashtags/Measure",
+        "page_title": "#Measure",
+        "supporting_text": "Data Modelling in Power BI with LLM",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.094920+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.097451+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/partner-microsoft",
+        "page_title": "Microsoft | 3rd Rock Business Solutions",
+        "supporting_text": "Power BI allows for creating a conceptual data model that contains all the relationships between the different data entities in the organization",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.097778+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "In the November 2025 Power BI update, Microsoft introduced a game-changing tool for data engineers and analysts: the Power BI Modeling MCP (Model Context Protocol) Server",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.098174+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-the-brain-drain-an-ai-knowledge-engine-for-the-organization",
+        "page_title": "Beyond the \"Brain Drain\": An AI Knowledge Engine for the Organization",
+        "supporting_text": "This exercise involves recreating reports from the ground up, leveraging well-documented Power BI requirements to save time",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.098780+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/blogs",
+        "page_title": "Blogs | 3rd Rock",
+        "supporting_text": "This protocol allows you to connect AI agents (like GitHub Copilot) directly to your Power BI semantic models",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.098958+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/escaping-excel-hell-why-integrated-governance-is-the-future-of-reporting",
+        "page_title": "Beyond the Spreadsheet: Excel Hell to Governed Agility",
+        "supporting_text": "Self-service reporting, when powered by a platform like Power BI where metric definitions are centrally governed, removes the primary incentive for users to retreat into spreadsheets",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.099909+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-insight-mastering-write-back-and-action-in-power-bi",
+        "page_title": "Beyond Insight: Mastering Write-Back and Action in Power BI",
+        "supporting_text": "With the introduction of Translytical Task Flows, Power BI has evolved from a passive dashboard into an interactive \"control panel\" for your business",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.100535+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Convert data into actionable insights.\nReimagine Business Reporting\nand Planning...\nOur Goals\nWe deliver data warehousing, data modelling, visualizations, financial planning and consolidation solutions. We address all aspects of corporate performance management with a special focus on finance and reporting.\nWe have rich experience in supporting our customers with their performance management journeys. We bring unique strategic approach to the disruptive innovation, treating them as journeys rather than onetime transformations.\nWe believe that the Office of Finance is going to set the tone and propel the future technology changes. The Office of Finance has the best vantage point to drive the changes in process, tools and technologies.\nCloud Analytics Modernization\nMordernise your data infrastructure and analytics solutions to meet the business demands...\nTool Agnostic Solution\nWe take a solution-centric approach to our implementations, instead of a tool-based approach\nData Science Acceleration\nReduce the time to market by obtaining actionable insight from your data on-demand reliably\nFull Life Cycle Support\nWe support you with all cycle of your analytics solution - strategy, implementation and support.\nReporting & Analytics\nBetter insights for actions allows business to spend more time on Analysis and less time on data gathering\nData Preparation\nWe deliver enterprise data models through data warehousing solutions to provide clean, integrated, high quality data to form the foundation of your analytics and reporting solutions.\nBusiness Insight\nWe provide advanced visualizations with dashboards and the ability to perform ad-hoc analysis while enabling the business to send out pre-formatted reports.\nFinancial Planning & Consolidation\nDriving accountability through smarter FP&A Solutions...\nShrink the time cycles, finish the budgeting process faster and align your plans with the desired goals. Make better decisions based on what-if scenario analyses and driver based planning. Use collaboration tools to improvise accountability and planning accuracy\nBudget & Forecast\n50\nYears of Experience\n28\nFull Cycle Implementation\n2\nOffshore & Onsite Capacity\nWhy 3rd Rock?\nWe specialize in enterprise data solutions that drive smarter business decisions. From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik.\nOur team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise data management. We bridge the gap between IT and business users to create solutions that deliver real value.\nWe are a technology agnostic implementation partner, so we build solutions on your platform of choice.\nCustomer Testimonials\nWe cover all aspect of solution lifecycle...\nStrategy\nOur team can work with you to develop a strategy and to take maximum advantage of the available technology in a cost-effective manner.\nWe believe in providing unbiased advice, we work with your stakeholders and subject matter experts to understand requirements, evaluate solutions and to build a roadmap for implementation.\nImplementation\nImplementing and delivering effective solutions with an aim to impart maximum output with minimum Total Cost of Ownership (TOC).\nEffective engagement with the stakeholders right from the conceptualization, understanding of requirements, functional specifications leading to an effective design phase.\nSupport\nAfter implementation, we work with you to transition your project to your in-house support team, or we can provide phone, online or onsite support on a long-term basis.\nWe have a strong offshore presence to provide you with different support options including a 24/7 support.\n\nEmail: webadmin@thirdrock.com.au\nPhone: +61 (02) 8007 3621",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/",
+    "exact_supporting_quote": "Data Modelling in Power BI with LLM",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "created_at": "2026-10-21T06:46:54.104813+00:00",
+    "updated_at": "2026-10-21T06:46:54.104844+00:00"
+  },
+  {
+    "id": 134,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "IBM Planning Analytics/TM1",
+    "normalized_name": "ibm planning analytics tm1",
+    "target_product": "Jedox",
+    "relationship_type": "TECHNOLOGY_PLATFORM",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "PRODUCT_OR_TECHNOLOGY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": false,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in e",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.088007+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in e",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/",
+    "exact_supporting_quote": "like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in e",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: TECHNOLOGY_PLATFORM (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.",
+    "created_at": "2026-10-21T06:46:54.107261+00:00",
+    "updated_at": "2026-10-21T06:46:54.107273+00:00"
+  },
+  {
+    "id": 135,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "CCH Tagetik",
+    "normalized_name": "cch tagetik",
+    "target_product": "Jedox",
+    "relationship_type": "TECHNOLOGY_PLATFORM",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "PRODUCT_OR_TECHNOLOGY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": false,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "osoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise dat",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.088087+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-the-brain-drain-an-ai-knowledge-engine-for-the-organization",
+        "page_title": "Beyond the \"Brain Drain\": An AI Knowledge Engine for the Organization",
+        "supporting_text": "tatus indicated as \"Working - Done.\" 5. Tagetik Web site - Mentioned as part of the project infrastructure. Summary: - The project involves two data sources: SQL and E",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091169+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "osoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise dat",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/",
+    "exact_supporting_quote": "osoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise dat",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: TECHNOLOGY_PLATFORM (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Technology platform documented in implementation/architecture context; internal Jedox usage is unverified.",
+    "created_at": "2026-10-21T06:46:54.109379+00:00",
+    "updated_at": "2026-10-21T06:46:54.109387+00:00"
+  },
+  {
+    "id": 136,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Microsoft Fabric",
+    "normalized_name": "microsoft fabric",
+    "target_product": "Jedox",
+    "relationship_type": "PARTNER",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "PRODUCT_OR_TECHNOLOGY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": false,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brin",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.088222+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/partner-microsoft",
+        "page_title": "Microsoft | 3rd Rock Business Solutions",
+        "supporting_text": "reparation Integrate all your data with Azure Data Factory - a fully managed, serverless data integration service. Visually integrate data sources with 100s of built",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.090951+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "nt will prompt you to authenticate your Microsoft Fabric account. - Cross-Platform Sync: You can keep the semantic model open in a web browser side-by-side with VS Code to watc",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091095+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-the-brain-drain-an-ai-knowledge-engine-for-the-organization",
+        "page_title": "Beyond the \"Brain Drain\": An AI Knowledge Engine for the Organization",
+        "supporting_text": "re We implemented this solution using a Microsoft Fabric Notebook integrated with Azure OpenAI and an Event house (KQL Database) for high-speed vector retrieval. 1. Connecting",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091244+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/escaping-excel-hell-why-integrated-governance-is-the-future-of-reporting",
+        "page_title": "Beyond the Spreadsheet: Excel Hell to Governed Agility",
+        "supporting_text": "nctions directly into an ecosystem like Microsoft Fabric, that friction disappears. Ultimately, the combination of these two solutions\u2014governed self servcie BI and integrated p",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.094278+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-insight-mastering-write-back-and-action-in-power-bi",
+        "page_title": "Beyond Insight: Mastering Write-Back and Action in Power BI",
+        "supporting_text": "rely on a few key components within the Microsoft Fabric ecosystem: - User Input Visuals: You use new Power BI visuals like the Text Slicer (for free text) or Button Slicer (fo",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.094699+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/ball-and-doggett",
+        "page_title": "Ball & Doggett | 3rd Rock Business Solutions",
+        "supporting_text": "ed Microsoft ERP and were familiar with Azure platform, so 3rd Rock used combination of Microsoft based technologies for building a Planning and Reporting solution.",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.096929+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/planning",
+        "page_title": "Planning & Consolidation | 3rd Rock Business Solutions",
+        "supporting_text": "Azure Compatible Rapid Deployment Solutions",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.096998+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.109679+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "- Authentication: Because this is in the cloud, the agent will prompt you to authenticate your Microsoft Fabric account",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.110652+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-the-brain-drain-an-ai-knowledge-engine-for-the-organization",
+        "page_title": "Beyond the \"Brain Drain\": An AI Knowledge Engine for the Organization",
+        "supporting_text": "We implemented this solution using a Microsoft Fabric Notebook integrated with Azure OpenAI and an Event house (KQL Database) for high-speed vector retrieval",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.111262+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/escaping-excel-hell-why-integrated-governance-is-the-future-of-reporting",
+        "page_title": "Beyond the Spreadsheet: Excel Hell to Governed Agility",
+        "supporting_text": "By bringing these functions directly into an ecosystem like Microsoft Fabric, that friction disappears",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.111875+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Convert data into actionable insights.\nReimagine Business Reporting\nand Planning...\nOur Goals\nWe deliver data warehousing, data modelling, visualizations, financial planning and consolidation solutions. We address all aspects of corporate performance management with a special focus on finance and reporting.\nWe have rich experience in supporting our customers with their performance management journeys. We bring unique strategic approach to the disruptive innovation, treating them as journeys rather than onetime transformations.\nWe believe that the Office of Finance is going to set the tone and propel the future technology changes. The Office of Finance has the best vantage point to drive the changes in process, tools and technologies.\nCloud Analytics Modernization\nMordernise your data infrastructure and analytics solutions to meet the business demands...\nTool Agnostic Solution\nWe take a solution-centric approach to our implementations, instead of a tool-based approach\nData Science Acceleration\nReduce the time to market by obtaining actionable insight from your data on-demand reliably\nFull Life Cycle Support\nWe support you with all cycle of your analytics solution - strategy, implementation and support.\nReporting & Analytics\nBetter insights for actions allows business to spend more time on Analysis and less time on data gathering\nData Preparation\nWe deliver enterprise data models through data warehousing solutions to provide clean, integrated, high quality data to form the foundation of your analytics and reporting solutions.\nBusiness Insight\nWe provide advanced visualizations with dashboards and the ability to perform ad-hoc analysis while enabling the business to send out pre-formatted reports.\nFinancial Planning & Consolidation\nDriving accountability through smarter FP&A Solutions...\nShrink the time cycles, finish the budgeting process faster and align your plans with the desired goals. Make better decisions based on what-if scenario analyses and driver based planning. Use collaboration tools to improvise accountability and planning accuracy\nBudget & Forecast\n50\nYears of Experience\n28\nFull Cycle Implementation\n2\nOffshore & Onsite Capacity\nWhy 3rd Rock?\nWe specialize in enterprise data solutions that drive smarter business decisions. From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik.\nOur team of data architects, BI specialists, and financial systems consultants brings deep expertise in enterprise data management. We bridge the gap between IT and business users to create solutions that deliver real value.\nWe are a technology agnostic implementation partner, so we build solutions on your platform of choice.\nCustomer Testimonials\nWe cover all aspect of solution lifecycle...\nStrategy\nOur team can work with you to develop a strategy and to take maximum advantage of the available technology in a cost-effective manner.\nWe believe in providing unbiased advice, we work with your stakeholders and subject matter experts to understand requirements, evaluate solutions and to build a roadmap for implementation.\nImplementation\nImplementing and delivering effective solutions with an aim to impart maximum output with minimum Total Cost of Ownership (TOC).\nEffective engagement with the stakeholders right from the conceptualization, understanding of requirements, functional specifications leading to an effective design phase.\nSupport\nAfter implementation, we work with you to transition your project to your in-house support team, or we can provide phone, online or onsite support on a long-term basis.\nWe have a strong offshore presence to provide you with different support options including a 24/7 support.\n\nEmail: webadmin@thirdrock.com.au\nPhone: +61 (02) 8007 3621",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/",
+    "exact_supporting_quote": "their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik. Our team of data architects, BI specialists, and financial systems consultants brin",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "created_at": "2026-10-21T06:46:54.114114+00:00",
+    "updated_at": "2026-10-21T06:46:54.114124+00:00"
+  },
+  {
+    "id": 137,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Jedox",
+    "normalized_name": "jedox",
+    "target_product": "Jedox",
+    "relationship_type": "PARTNER",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "PRODUCT_OR_TECHNOLOGY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": false,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/jedox-partner",
+        "page_title": "Jedox | 3rd Rock",
+        "supporting_text": "Found in page title on partner page: 'Jedox | 3rd Rock'",
+        "relationship_claim": "PARTNER",
+        "product_claim": "Partner entity for Jedox",
+        "extracted_at": "2026-10-21T06:46:54.088339+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.114576+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/jedox-partner",
+        "page_title": "Jedox | 3rd Rock",
+        "supporting_text": "3rd Rock is a dedicated Jedox Partner specializing in delivering robust, effective Enterprise Performance Management (EPM) and Business Intelligence (BI) solutions",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.114795+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/starlight",
+        "page_title": "Starlight Foundation | 3rd Rock Business Solutions",
+        "supporting_text": "3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.116650+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/starlight",
+        "page_title": "Starlight Foundation | 3rd Rock Business Solutions",
+        "supporting_text": "Starlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.116699+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Found in page title on partner page: 'Jedox | 3rd Rock'",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/jedox-partner",
+    "exact_supporting_quote": "Found in page title on partner page: 'Jedox | 3rd Rock'",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "created_at": "2026-10-21T06:46:54.117463+00:00",
+    "updated_at": "2026-10-21T06:46:54.117473+00:00"
+  },
+  {
+    "id": 138,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "SAP",
+    "normalized_name": "sap",
+    "target_product": "Jedox",
+    "relationship_type": "CASE_STUDY",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "PRODUCT_OR_TECHNOLOGY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": true,
+      "product_usage_supported": true,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "CONFIRMED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/analytics",
+        "page_title": "Reporting & Analytics | 3rd Rock Business Solutions",
+        "supporting_text": "tegration to leading ERP solutions like SAP, XERO, Sales Force solutions We reduce errors (and error-prone redundant data entry), while improving data integrity. W",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.089450+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/steadfast",
+        "page_title": "Steadfast Group Limited | 3rd Rock",
+        "supporting_text": "re locked in heterogeneous ERP systems (SAP ByDesign, MYOB, and Xero). - High IT Dependency: The finance team lacked the autonomy to manage the process without con",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.093444+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/starlight",
+        "page_title": "Starlight Foundation | 3rd Rock Business Solutions",
+        "supporting_text": "e to: - Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud, - Model detailed workforce planning a",
+        "relationship_claim": "TECHNOLOGY_PLATFORM",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.096168+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "We had to do it manually, such a disappointment :-)",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.118288+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/steadfast",
+        "page_title": "Steadfast Group Limited | 3rd Rock",
+        "supporting_text": "- Fragmented Data: Financials were locked in heterogeneous ERP systems (SAP ByDesign, MYOB, and Xero)",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.118767+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/escaping-excel-hell-why-integrated-governance-is-the-future-of-reporting",
+        "page_title": "Beyond the Spreadsheet: Excel Hell to Governed Agility",
+        "supporting_text": "By bringing these functions directly into an ecosystem like Microsoft Fabric, that friction disappears",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.119358+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Candidate classified as PRODUCT_OR_TECHNOLOGY rather than a confirmed corporate entity.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Enhanced decision-making for national nonprofit\nStarlight Children's Foundation unleashes the potential of FP&A to drive innovation.\nCustomer Profile\nStarlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions.\nThey are the broadest reaching children's charity in Australia, with a wide range of programs to give seriously ill children a break from their medical treatment.\nAn organization focused on innovation; Starlight made the decision to invest in an Enterprise Performance Management (EPM) solution to make better business decisions.\n3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance.\nBusiness Challenges\nStruggling with a reliance on Excel for planning and reporting, Starlight Children's Foundation needed to both support Finance and enable those who sit outside the Finance function with unified data and more accurate planning.\nStarlight's key goal was to enhance their decision-making process. Aiming to\ndo this while increasing their internal operational efficiencies with a scalable\nsolution, the need for a modern planning & budgeting process was quickly\nrecognized as a key imperative.\nFirst implemented to replicate their existing legacy planning and reporting,users realized a clear lack of details and reporting was found to be hard to understand with disparate data and complex roll-ups.\nTheir key objectives were\n- Significant time reduction in data gathering \u2013 releasing time for analysis,\n- Reduced cycle time for budgeting, forecasting and financial close processes,\n- Improve forecast accuracy,\n- Minimise risk of errors due to manual processing and consolidation,\n- Removed reliance on \"off-line\" Excel spreadsheets\nEnabling innovation to support better business decisions\n3rd Rock engaged with the Customer to identify, design, and implement a solution that met the Customer requirements, while also adhering to the budget and quality parameters.\nStarlight's key goal was to enhance their decision-making process. Aiming to\ndo this while increasing their internal operational efficiencies with a scalable\nsolution, the need for a modern planning & budgeting process was quickly\nrecognized as a key imperative.\nThey began their finance transformation journey with a newly created FP&A role\nin 2019. They needed to support finance directly and help build financial\ncapabilities for team members who sit outside the finance function. Previously\nusing Excel, they needed a scalable solution with broader capabilities.\nResults & Outcomes\nFlexible, full suite reporting with complete oversight & governance.\n\"This solution is great for cross functional relationships and collaboration. Now we are just flying because we can drill down, drill across, and everyone can see what they are responsible for in the organization. We did not have that before.\"\n- Anna Schell ( FP&A Starlight)\nStarlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.. This meant adding to and restructuring data in source systems. 3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting.\nToday, a full suite of reporting is done through the solution. Cost centers and program managers can easily see data they need when they need it with greater flexibility, which their previous solution lacked. The solution implementation resulted in significant time reduction in data gathering - making more time for analysis. This has also resulted in reduction in cycle time for budgeting and reporting processes.\nThe process and calculation are now centrally governed and removing Excel dependencies has minimized the risk of errors due to manual processing; and remove reliance on \"off-line\" excel spreadsheets.  The solution framework allows the customer to work on a collaborative environment with centralized data storage, centrally governed calculation, and authorization to plan and report data real-time. Starlight's capacity to perform analytics and ad-hoc analysis has improved considerably.\nFrom disconnected to empowered, they are able to:\n- Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud,\n- Model detailed workforce planning and program costing without complex spreadsheets,\n- Perform 'what-if' analysis on the data,\n- Have complete oversight of business financial and fundraising position for the coming years.\nWith their Finance team driving adoption of Jedox, Starlight is focused on minimizing mundane reporting tasks so they can focus on analysis, story-telling and value-add tasks. Then remove the next sentence about the Board.\n\nEmail: webadmin@thirdrock.com.au\nPhone: +61 (02) 8007 3621",
+    "product_usage_evidence": "Enhanced decision-making for national nonprofit\nStarlight Children's Foundation unleashes the potential of FP&A to drive innovation.\nCustomer Profile\nStarlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions.\nThey are the broadest reaching children's charity in Australia, with a wide range of programs to give seriously ill children a break from their medical treatment.\nAn organization focused on innovation; Starlight made the decision to invest in an Enterprise Performance Management (EPM) solution to make better business decisions.\n3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance.\nBusiness Challenges\nStruggling with a reliance on Excel for planning and reporting, Starlight Children's Foundation needed to both support Finance and enable those who sit outside the Finance function with unified data and more accurate planning.\nStarlight's key goal was to enhance their decision-making process. Aiming to\ndo this while increasing their internal operational efficiencies with a scalable\nsolution, the need for a modern planning & budgeting process was quickly\nrecognized as a key imperative.\nFirst implemented to replicate their existing legacy planning and reporting,users realized a clear lack of details and reporting was found to be hard to understand with disparate data and complex roll-ups.\nTheir key objectives were\n- Significant time reduction in data gathering \u2013 releasing time for analysis,\n- Reduced cycle time for budgeting, forecasting and financial close processes,\n- Improve forecast accuracy,\n- Minimise risk of errors due to manual processing and consolidation,\n- Removed reliance on \"off-line\" Excel spreadsheets\nEnabling innovation to support better business decisions\n3rd Rock engaged with the Customer to identify, design, and implement a solution that met the Customer requirements, while also adhering to the budget and quality parameters.\nStarlight's key goal was to enhance their decision-making process. Aiming to\ndo this while increasing their internal operational efficiencies with a scalable\nsolution, the need for a modern planning & budgeting process was quickly\nrecognized as a key imperative.\nThey began their finance transformation journey with a newly created FP&A role\nin 2019. They needed to support finance directly and help build financial\ncapabilities for team members who sit outside the finance function. Previously\nusing Excel, they needed a scalable solution with broader capabilities.\nResults & Outcomes\nFlexible, full suite reporting with complete oversight & governance.\n\"This solution is great for cross functional relationships and collaboration. Now we are just flying because we can drill down, drill across, and everyone can see what they are responsible for in the organization. We did not have that before.\"\n- Anna Schell ( FP&A Starlight)\nStarlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.. This meant adding to and restructuring data in source systems. 3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting.\nToday, a full suite of reporting is done through the solution. Cost centers and program managers can easily see data they need when they need it with greater flexibility, which their previous solution lacked. The solution implementation resulted in significant time reduction in data gathering - making more time for analysis. This has also resulted in reduction in cycle time for budgeting and reporting processes.\nThe process and calculation are now centrally governed and removing Excel dependencies has minimized the risk of errors due to manual processing; and remove reliance on \"off-line\" excel spreadsheets.  The solution framework allows the customer to work on a collaborative environment with centralized data storage, centrally governed calculation, and authorization to plan and report data real-time. Starlight's capacity to perform analytics and ad-hoc analysis has improved considerably.\nFrom disconnected to empowered, they are able to:\n- Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud,\n- Model detailed workforce planning and program costing without complex spreadsheets,\n- Perform 'what-if' analysis on the data,\n- Have complete oversight of business financial and fundraising position for the coming years.\nWith their Finance team driving adoption of Jedox, Starlight is focused on minimizing mundane reporting tasks so they can focus on analysis, story-telling and value-add tasks. Then remove the next sentence about the Board.\n\nEmail: webadmin@thirdrock.com.au\nPhone: +61 (02) 8007 3621",
+    "supporting_source_url": "https://www.thirdrock.com.au/analytics",
+    "exact_supporting_quote": "tegration to leading ERP solutions like SAP, XERO, Sales Force solutions We reduce errors (and error-prone redundant data entry), while improving data integrity. W",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: CONFIRMED. Candidate classified as PRODUCT_OR_TECHNOLOGY rather than a confirmed corporate entity.",
+    "created_at": "2026-10-21T06:46:54.125361+00:00",
+    "updated_at": "2026-10-21T06:46:54.125427+00:00"
+  },
+  {
+    "id": 139,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Microsoft",
+    "normalized_name": "microsoft",
+    "target_product": "Jedox",
+    "relationship_type": "PARTNER",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "NAMED_COMPANY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": false,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/partner-microsoft",
+        "page_title": "Microsoft | 3rd Rock Business Solutions",
+        "supporting_text": "Found in page title on partner page: 'Microsoft | 3rd Rock Business Solutions'",
+        "relationship_claim": "PARTNER",
+        "product_claim": "Partner entity for Microsoft",
+        "extracted_at": "2026-10-21T06:46:54.089601+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/",
+        "page_title": "Analytics & Planning - 3rd Rock Business Solution",
+        "supporting_text": "From data warehousing to financial consolidation, we help organizations harness the power of their data using leading platforms like Microsoft Fabric, Power BI, Jedox, TM1, and Tagetik",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.125745+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "In the November 2025 Power BI update, Microsoft introduced a game-changing tool for data engineers and analysts: the Power BI Modeling MCP (Model Context Protocol) Server",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.126394+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/powerbi-data-modelling-with-mcp",
+        "page_title": "Data Modelling in Power BI with MCP Server",
+        "supporting_text": "- Authentication: Because this is in the cloud, the agent will prompt you to authenticate your Microsoft Fabric account",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.126415+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/beyond-the-brain-drain-an-ai-knowledge-engine-for-the-organization",
+        "page_title": "Beyond the \"Brain Drain\": An AI Knowledge Engine for the Organization",
+        "supporting_text": "We implemented this solution using a Microsoft Fabric Notebook integrated with Azure OpenAI and an Event house (KQL Database) for high-speed vector retrieval",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.127073+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/post/escaping-excel-hell-why-integrated-governance-is-the-future-of-reporting",
+        "page_title": "Beyond the Spreadsheet: Excel Hell to Governed Agility",
+        "supporting_text": "By bringing these functions directly into an ecosystem like Microsoft Fabric, that friction disappears",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.127778+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/ball-and-doggett",
+        "page_title": "Ball & Doggett | 3rd Rock Business Solutions",
+        "supporting_text": "The Customer used Microsoft ERP and were familiar with Azure platform, so 3rd Rock used combination of Microsoft based technologies for building a Planning and Reporting solution",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.128711+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/ball-and-doggett",
+        "page_title": "Ball & Doggett | 3rd Rock Business Solutions",
+        "supporting_text": "Being agnostic to the technology, 3rd Rock proposed ot built a planning and reporting solution using Microsoft and compatible CPM solution",
+        "relationship_claim": null,
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.128722+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Found in page title on partner page: 'Microsoft | 3rd Rock Business Solutions'",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/partner-microsoft",
+    "exact_supporting_quote": "Found in page title on partner page: 'Microsoft | 3rd Rock Business Solutions'",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: PARTNER (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Formal partner/alliance documented; internal Jedox usage is unverified.",
+    "created_at": "2026-10-21T06:46:54.129417+00:00",
+    "updated_at": "2026-10-21T06:46:54.129424+00:00"
+  },
+  {
+    "id": 140,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Steadfast Group Limited",
+    "normalized_name": "steadfast",
+    "target_product": "Jedox",
+    "relationship_type": "CASE_STUDY",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "NAMED_COMPANY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": true,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/steadfast",
+        "page_title": "Steadfast Group Limited | 3rd Rock",
+        "supporting_text": "Found in page title on case study page: 'Steadfast Group Limited | 3rd Rock'",
+        "relationship_claim": "CASE_STUDY",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091462+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/steadfast",
+        "page_title": "Steadfast Group Limited | 3rd Rock",
+        "supporting_text": "Steadfast Group Limited",
+        "relationship_claim": "MENTION",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.091575+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Found in page title on case study page: 'Steadfast Group Limited | 3rd Rock'",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/steadfast",
+    "exact_supporting_quote": "Found in page title on case study page: 'Steadfast Group Limited | 3rd Rock'",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.",
+    "created_at": "2026-10-21T06:46:54.132003+00:00",
+    "updated_at": "2026-10-21T06:46:54.132012+00:00"
+  },
+  {
+    "id": 141,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Starlight Children's Foundation",
+    "normalized_name": "starlight children s foundation",
+    "target_product": "Jedox",
+    "relationship_type": "CASE_STUDY",
+    "classification": "CONFIRMED",
+    "candidate_category": "NAMED_COMPANY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": true,
+      "product_usage_supported": true,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "CONFIRMED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/starlight",
+        "page_title": "Starlight Foundation | 3rd Rock Business Solutions",
+        "supporting_text": "Found in page title on case study page: 'Starlight Foundation | 3rd Rock Business Solutions'",
+        "relationship_claim": "CASE_STUDY",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.094996+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/starlight",
+        "page_title": "Starlight Foundation | 3rd Rock Business Solutions",
+        "supporting_text": "Customer Profile Starlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions. They are the broadest reaching chi",
+        "relationship_claim": "CUSTOMER",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.095904+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Customer relationship and Jedox usage both verified with source evidence quotes.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Customer Profile Starlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions. They are the broadest reaching chi",
+    "product_usage_evidence": "Enhanced decision-making for national nonprofit\nStarlight Children's Foundation unleashes the potential of FP&A to drive innovation.\nCustomer Profile\nStarlight Children's Foundation is a nonprofit in Australia operating nationally with a mission to deliver happiness for children and young people. They have worked with healthcare professionals for over 30 years to bring fun, joy, and laughter to children and young people with chronic conditions.\nThey are the broadest reaching children's charity in Australia, with a wide range of programs to give seriously ill children a break from their medical treatment.\nAn organization focused on innovation; Starlight made the decision to invest in an Enterprise Performance Management (EPM) solution to make better business decisions.\n3rd Rock worked with the customer in re-deploying Jedox to unlock the overall functionality, scalability, and performance.\nBusiness Challenges\nStruggling with a reliance on Excel for planning and reporting, Starlight Children's Foundation needed to both support Finance and enable those who sit outside the Finance function with unified data and more accurate planning.\nStarlight's key goal was to enhance their decision-making process. Aiming to\ndo this while increasing their internal operational efficiencies with a scalable\nsolution, the need for a modern planning & budgeting process was quickly\nrecognized as a key imperative.\nFirst implemented to replicate their existing legacy planning and reporting,users realized a clear lack of details and reporting was found to be hard to understand with disparate data and complex roll-ups.\nTheir key objectives were\n- Significant time reduction in data gathering \u2013 releasing time for analysis,\n- Reduced cycle time for budgeting, forecasting and financial close processes,\n- Improve forecast accuracy,\n- Minimise risk of errors due to manual processing and consolidation,\n- Removed reliance on \"off-line\" Excel spreadsheets\nEnabling innovation to support better business decisions\n3rd Rock engaged with the Customer to identify, design, and implement a solution that met the Customer requirements, while also adhering to the budget and quality parameters.\nStarlight's key goal was to enhance their decision-making process. Aiming to\ndo this while increasing their internal operational efficiencies with a scalable\nsolution, the need for a modern planning & budgeting process was quickly\nrecognized as a key imperative.\nThey began their finance transformation journey with a newly created FP&A role\nin 2019. They needed to support finance directly and help build financial\ncapabilities for team members who sit outside the finance function. Previously\nusing Excel, they needed a scalable solution with broader capabilities.\nResults & Outcomes\nFlexible, full suite reporting with complete oversight & governance.\n\"This solution is great for cross functional relationships and collaboration. Now we are just flying because we can drill down, drill across, and everyone can see what they are responsible for in the organization. We did not have that before.\"\n- Anna Schell ( FP&A Starlight)\nStarlight engaged 3rd Rock to look into how best to utilize Jedox functionality with the fresh set of eyes.. This meant adding to and restructuring data in source systems. 3rd Rock re-implemented Jedox to support the business analysis, board reporting, planning, budgeting, and forecasting.\nToday, a full suite of reporting is done through the solution. Cost centers and program managers can easily see data they need when they need it with greater flexibility, which their previous solution lacked. The solution implementation resulted in significant time reduction in data gathering - making more time for analysis. This has also resulted in reduction in cycle time for budgeting and reporting processes.\nThe process and calculation are now centrally governed and removing Excel dependencies has minimized the risk of errors due to manual processing; and remove reliance on \"off-line\" excel spreadsheets.  The solution framework allows the customer to work on a collaborative environment with centralized data storage, centrally governed calculation, and authorization to plan and report data real-time. Starlight's capacity to perform analytics and ad-hoc analysis has improved considerably.\nFrom disconnected to empowered, they are able to:\n- Consolidate financial data from SAP with planning information at role-based level with easy access through the Cloud,\n- Model detailed workforce planning and program costing without complex spreadsheets,\n- Perform 'what-if' analysis on the data,\n- Have complete oversight of business financial and fundraising position for the coming years.\nWith their Finance team driving adoption of Jedox, Starlight is focused on minimizing mundane reporting tasks so they can focus on analysis, story-telling and value-add tasks. Then remove the next sentence about the Board.\n\nEmail: webadmin@thirdrock.com.au\nPhone: +61 (02) 8007 3621",
+    "supporting_source_url": "https://www.thirdrock.com.au/starlight",
+    "exact_supporting_quote": "Found in page title on case study page: 'Starlight Foundation | 3rd Rock Business Solutions'",
+    "confidence_score": 0.95,
+    "verification_rationale": "Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: CONFIRMED. Customer relationship and Jedox usage both verified with source evidence quotes.",
+    "created_at": "2026-10-21T06:46:54.139206+00:00",
+    "updated_at": "2026-10-21T06:46:54.139222+00:00"
+  },
+  {
+    "id": 142,
+    "job_id": 34,
+    "target_company_id": 81,
+    "candidate_name": "Ball & Doggett",
+    "normalized_name": "ball doggett",
+    "target_product": "Jedox",
+    "relationship_type": "CASE_STUDY",
+    "classification": "PARTIALLY_VERIFIED",
+    "candidate_category": "NAMED_COMPANY",
+    "checklist": {
+      "company_discovered": true,
+      "customer_relationship_supported": true,
+      "product_usage_supported": false,
+      "source_url_recorded": true,
+      "supporting_text_recorded": true,
+      "verification_completed": true
+    },
+    "product_usage_status": "UNVERIFIED",
+    "sources": [
+      {
+        "source_url": "https://www.thirdrock.com.au/ball-and-doggett",
+        "page_title": "Ball & Doggett | 3rd Rock Business Solutions",
+        "supporting_text": "Found in page title on case study page: 'Ball & Doggett | 3rd Rock Business Solutions'",
+        "relationship_claim": "CASE_STUDY",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.096265+00:00"
+      },
+      {
+        "source_url": "https://www.thirdrock.com.au/ball-and-doggett",
+        "page_title": "Ball & Doggett | 3rd Rock Business Solutions",
+        "supporting_text": "Customer Profile The Ball & Doggett is Australia's largest distributor of printable materials and consumables and sells all sorts of raw materials that turn big ideas into reality. The Customer sell materials for all kinds of purposes. Whether it is paper, packaging, wide format media, roll products, self-adhesive (pre-cut labels, rolls, and flat s",
+        "relationship_claim": "CUSTOMER",
+        "product_claim": null,
+        "extracted_at": "2026-10-21T06:46:54.096811+00:00"
+      }
+    ],
+    "missing_evidence_reason": "Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.",
+    "research_status": "COMPLETED",
+    "relationship_verification_status": "CONFIRMED",
+    "relationship_evidence": "Found in page title on case study page: 'Ball & Doggett | 3rd Rock Business Solutions'",
+    "product_usage_evidence": null,
+    "supporting_source_url": "https://www.thirdrock.com.au/ball-and-doggett",
+    "exact_supporting_quote": "Found in page title on case study page: 'Ball & Doggett | 3rd Rock Business Solutions'",
+    "confidence_score": 0.8,
+    "verification_rationale": "Relationship: CASE_STUDY (CONFIRMED). Target product (Jedox) usage: UNVERIFIED. Customer relationship verified via documented case_study, but explicit usage of Jedox was not found on crawled pages.",
+    "created_at": "2026-10-21T06:46:54.142000+00:00",
+    "updated_at": "2026-10-21T06:46:54.142011+00:00"
+  }
+]

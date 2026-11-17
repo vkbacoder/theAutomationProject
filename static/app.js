@@ -214,6 +214,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Auto-sync workflow dropdown when target product is Jedox
+  const inputTargetProduct = document.getElementById("crawl-target-product");
+  if (inputTargetProduct && crawlWorkflow) {
+    inputTargetProduct.addEventListener("input", () => {
+      const val = inputTargetProduct.value.trim().toLowerCase();
+      if (val === "jedox" && crawlWorkflow.value === "GENERAL") {
+        crawlWorkflow.value = "JEDOX";
+      }
+    });
+  }
+
   // Cancel Job
   if (btnCancelCrawl) btnCancelCrawl.addEventListener("click", cancelActiveCrawlJob);
 
@@ -468,13 +479,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const crawlObjective = document.getElementById("crawl-objective");
     const crawlTargetProduct = document.getElementById("crawl-target-product");
+    const tpVal = (crawlTargetProduct && crawlTargetProduct.value.trim()) || "";
+    let wfVal = crawlWorkflow.value || "GENERAL";
+    if (tpVal.toLowerCase() === "jedox" && wfVal === "GENERAL") {
+      wfVal = "JEDOX";
+      crawlWorkflow.value = "JEDOX";
+    }
 
     const payload = {
       url: url,
-      workflow: crawlWorkflow.value || "GENERAL",
+      workflow: wfVal,
       company_name: crawlCompanyName.value.trim() || undefined,
       objective: (crawlObjective && crawlObjective.value.trim()) || undefined,
-      target_product: (crawlTargetProduct && crawlTargetProduct.value.trim()) || undefined,
+      target_product: tpVal || undefined,
       max_depth: parseInt(crawlMaxDepth.value, 10) || 2,
       max_pages: parseInt(crawlMaxPages.value, 10) || 20,
       max_pages_per_domain: parseInt(crawlMaxDomain.value, 10) || 20
@@ -781,8 +798,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Findings count from real data
     if (ovCountCompanies) ovCountCompanies.textContent = intelCandidates.length;
-    if (ovCountRelVerified) ovCountRelVerified.textContent = intelCandidates.filter(c => (c.checklist && c.checklist.relationship_verified) || c.relationship_verified || c.relationship_type === "CUSTOMER" || c.relationship_type === "CLIENT").length;
-    if (ovCountUsageVerified) ovCountUsageVerified.textContent = intelCandidates.filter(c => (c.checklist && c.checklist.product_usage_verified) || c.product_usage_verified || c.product_usage_status === "CONFIRMED").length;
+    if (ovCountRelVerified) ovCountRelVerified.textContent = intelCandidates.filter(c => (c.checklist && c.checklist.customer_relationship_supported) || (c.relationship_verification_status === "CONFIRMED" && ["CUSTOMER", "CASE_STUDY", "TESTIMONIAL"].includes(c.relationship_type))).length;
+    if (ovCountUsageVerified) ovCountUsageVerified.textContent = intelCandidates.filter(c => (c.checklist && c.checklist.target_product_usage_supported) || c.product_usage_status === "CONFIRMED").length;
     if (ovCountDms) ovCountDms.textContent = intelDecisionMakers.length;
     if (ovCountContacts) ovCountContacts.textContent = intelContacts.length;
     if (ovCountDocs) ovCountDocs.textContent = intelDocuments.length;

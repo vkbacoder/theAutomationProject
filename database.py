@@ -12,7 +12,12 @@ from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional
 
-from dedup import is_fuzzy_name_match, normalize_company_name, normalize_domain
+from dedup import (
+    canonical_contact_key,
+    is_fuzzy_name_match,
+    normalize_company_name,
+    normalize_domain,
+)
 from models import (
     CandidateCategory,
     CandidateClassification,
@@ -2001,6 +2006,22 @@ def save_public_contact(
             ctype_val = contact.contact_type.value if hasattr(contact.contact_type, "value") else str(contact.contact_type)
             vstatus_val = contact.verification_status.value if hasattr(contact.verification_status, "value") else str(contact.verification_status)
 
+            if not contact.id and contact.job_id:
+                existing_rows = conn.execute(
+                    "SELECT id, contact_type, contact_value, associated_person_name, associated_company FROM public_contacts WHERE job_id = ?",
+                    (contact.job_id,),
+                ).fetchall()
+                target_key = canonical_contact_key(
+                    contact.contact_type,
+                    contact.contact_value,
+                    contact.person_name or contact.associated_person_name,
+                    contact.associated_company,
+                )
+                for er in existing_rows:
+                    if canonical_contact_key(er[1], er[2], er[3], er[4]) == target_key:
+                        contact.id = er[0]
+                        break
+
             if contact.id:
                 conn.execute(
                     """
@@ -2087,7 +2108,7 @@ def get_public_contacts(
     offset: int = 0,
     db_path: Optional[str] = None,
 ) -> List[PublicContact]:
-    """Retrieve public contacts with optional filters."""
+    """Retrieve public contacts with optional filters and stable deduplication."""
     conn = get_connection(db_path)
     try:
         query = "SELECT * FROM public_contacts WHERE 1=1"
@@ -2109,7 +2130,20 @@ def get_public_contacts(
         params.extend([limit, offset])
 
         rows = conn.execute(query, params).fetchall()
-        return [_row_to_public_contact(r) for r in rows]
+        contacts: List[PublicContact] = []
+        seen_keys: set = set()
+        for r in rows:
+            c = _row_to_public_contact(r)
+            ckey = canonical_contact_key(
+                c.contact_type,
+                c.contact_value,
+                c.person_name or c.associated_person_name,
+                c.associated_company,
+            )
+            if ckey not in seen_keys:
+                seen_keys.add(ckey)
+                contacts.append(c)
+        return contacts
     finally:
         conn.close()
 

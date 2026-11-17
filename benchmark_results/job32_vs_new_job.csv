@@ -1,0 +1,17 @@
+Metric,Baseline Job #32,Fresh Job #34,Delta / Improvement,Assessment
+Crawl Job Status,COMPLETED,COMPLETED,0,Both jobs completed crawl successfully
+Pages Crawled,15,15,0,Identical web surface coverage
+Worker Pickup Latency,~8.5s,2.12s,-6.38s,Autonomous worker picked up pending job in 2.12s
+Discovered URLs,14,14,0,Consistent link discovery
+Total Candidate Entities,5,10,+5 candidates,Technology platforms and architectures now extracted
+False Product-Usage Claims,"2 (Microsoft, Jedox)",0,-2 false claims,Eliminated false product usage on partner/vendor pages
+Total Evidence Records,62,36,-26 rows (-41.9%),Eliminated redundant duplicated sentences
+Unique Evidence Tuples,18,36,+18 unique items,100% of persisted evidence represents unique claims
+Duplicate Evidence Rows,44 (70.9%),0 (0.0%),-44 duplicates,"Stable, idempotent deduplication enforced"
+Decision-Makers Discovered,1 (Anna Schell),"3 (Anna Schell, Badrish Shriniwas, Sankaran Angamuthu)",+2 people,Discovered technical authors & contributors from blog bylines
+Anna Schell Published Title,FP&A,FP&A,Preserved,Exact published title preserved without hallucinating unmentioned words
+Anna Schell Association,Linked to Starlight ID,Linked to Starlight ID,Preserved,Foreign-key candidate company association intact
+Fabricated Emails/Phones,0,0,0,Zero invented personal emails/phones across all runs
+Public Contacts,3,3,0,Company-level contacts cleanly segregated from person contacts
+Discovered Documents,0,0,0,Accurately verified: 3rd Rock site contains zero linked PDF/Office files
+Multi-Format Export Formats,"CSV, Excel (no JSON)","CSV, Excel, JSON",+JSON format,"Full provenance fields included across CSV, Excel, and JSON"

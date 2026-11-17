@@ -301,14 +301,18 @@ def extract_decision_makers_from_text(
 
                 seen_names.add(norm_name)
                 clean_title = "Author"
-                item_company = company_to_use
+                item_company = default_company or company_to_use
                 if re.search(r"\b(?:Director|Founder|Managing\s+Director|CEO|CTO|VP)\b", line, re.IGNORECASE):
                     matched_role = RoleCategory.EXECUTIVE
                     clean_title = "Director"
                     department_desc = "Leadership & Strategy"
+                    v_status = "CONFIRMED_PUBLIC"
+                    relevance_desc = "Executive leadership with strategic authority"
                 else:
-                    matched_role = RoleCategory.TECHNOLOGY_IT
-                    department_desc = "Technical Publications & Architecture"
+                    matched_role = RoleCategory.AUTHOR_CONTRIBUTOR
+                    department_desc = "Content & Technical Publications"
+                    v_status = "UNVERIFIED"
+                    relevance_desc = f"Author/contributor of technical articles; decision-making authority unverified"
 
                 snippet = line[:250]
                 discovered.append(
@@ -322,11 +326,11 @@ def extract_decision_makers_from_text(
                         department=department_desc,
                         role_category=matched_role,
                         associated_company=item_company,
-                        professional_relevance=f"Author of publications and technical articles relevant to {target_product} analytics architecture",
+                        professional_relevance=relevance_desc,
                         source_url=source_url,
                         source_type=source_type,
                         supporting_quote=snippet,
-                        verification_status="CONFIRMED_PUBLIC",
+                        verification_status=v_status,
                     )
                 )
 
@@ -581,27 +585,36 @@ def generate_job_unified_evidence(
                         verification_status=c.classification.value if hasattr(c.classification, "value") else str(c.classification),
                     )
                 )
-            if s.product_claim and s.supporting_text:
-                # Only include product usage claim if candidate product usage is CONFIRMED
-                # or if the source specifically supports verified product usage
-                is_confirmed_usage = (
-                    c.product_usage_status == "CONFIRMED"
-                    or (c.relationship_type not in (RelationshipType.PARTNER, RelationshipType.TARGET_VENDOR, RelationshipType.TECHNOLOGY_PLATFORM, RelationshipType.VENDOR)
-                        and c.classification == CandidateClassification.CONFIRMED)
+        # Emit verified product usage evidence when candidate's product usage is CONFIRMED
+        if c.product_usage_status == "CONFIRMED" and c.product_usage_evidence:
+            prod_src_url = c.supporting_source_url or (c.sources[0].source_url if c.sources else "")
+            _add_evidence(
+                build_unified_evidence(
+                    job_id=job_id,
+                    claim_type=ClaimType.PRODUCT_USAGE,
+                    claim_text=f"{c.target_product} verified usage by {c.candidate_name}",
+                    source_url=prod_src_url,
+                    supporting_quote=c.product_usage_evidence,
+                    source_format="DOCUMENT" if any(prod_src_url.lower().endswith(ext) for ext in (".pdf", ".xlsx", ".docx", ".pptx", ".csv")) else "HTML",
+                    candidate_id=c.id,
+                    verification_status="CONFIRMED",
                 )
-                if is_confirmed_usage:
-                    _add_evidence(
-                        build_unified_evidence(
-                            job_id=job_id,
-                            claim_type=ClaimType.PRODUCT_USAGE,
-                            claim_text=f"{c.target_product} usage claim for {c.candidate_name}: {s.product_claim}",
-                            source_url=s.source_url,
-                            supporting_quote=s.supporting_text,
-                            source_format="DOCUMENT" if any(s.source_url.lower().endswith(ext) for ext in (".pdf", ".xlsx", ".docx", ".pptx", ".csv")) else "HTML",
-                            candidate_id=c.id,
-                            verification_status=c.product_usage_status,
-                        )
+            )
+
+        for s in c.sources:
+            if s.product_claim and s.supporting_text and c.product_usage_status == "CONFIRMED":
+                _add_evidence(
+                    build_unified_evidence(
+                        job_id=job_id,
+                        claim_type=ClaimType.PRODUCT_USAGE,
+                        claim_text=f"{c.target_product} usage claim for {c.candidate_name}: {s.product_claim}",
+                        source_url=s.source_url,
+                        supporting_quote=s.supporting_text,
+                        source_format="DOCUMENT" if any(s.source_url.lower().endswith(ext) for ext in (".pdf", ".xlsx", ".docx", ".pptx", ".csv")) else "HTML",
+                        candidate_id=c.id,
+                        verification_status="CONFIRMED",
                     )
+                )
 
     # 2. Decision Maker evidence
     for dm in decision_makers:

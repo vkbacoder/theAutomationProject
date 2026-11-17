@@ -1,0 +1,97 @@
+{
+  "benchmark_baseline_job": {
+    "job_id": 32,
+    "seed_url": "https://www.thirdrock.com.au/",
+    "company_name": "3rd Rock Business Solutions",
+    "workflow": "JEDOX",
+    "target_product": "Jedox",
+    "status": "COMPLETED",
+    "pages_crawled": 15,
+    "pages_failed": 0
+  },
+  "metrics_comparison_baseline": {
+    "candidates_count": 5,
+    "candidates": [
+      {
+        "name": "Starlight Children's Foundation",
+        "relationship_type": "CASE_STUDY",
+        "classification": "CONFIRMED",
+        "product_usage_status": "CONFIRMED",
+        "notes": "Verified case study with Jedox deployment"
+      },
+      {
+        "name": "Ball & Doggett",
+        "relationship_type": "CASE_STUDY",
+        "classification": "PARTIALLY_VERIFIED",
+        "product_usage_status": "UNVERIFIED",
+        "notes": "Customer case study using Microsoft ERP/Azure; Jedox unverified"
+      },
+      {
+        "name": "Steadfast Group Limited",
+        "relationship_type": "CASE_STUDY",
+        "classification": "PARTIALLY_VERIFIED",
+        "product_usage_status": "UNVERIFIED",
+        "notes": "Customer case study for financial consolidation; Jedox unverified"
+      },
+      {
+        "name": "Jedox",
+        "relationship_type": "PARTNER",
+        "classification": "PARTIALLY_VERIFIED",
+        "product_usage_status": "CONFIRMED_AS_PARTNER_OR_MENTION",
+        "notes": "FLAW: Target product erroneously marked with product usage"
+      },
+      {
+        "name": "Microsoft",
+        "relationship_type": "PARTNER",
+        "classification": "PARTIALLY_VERIFIED",
+        "product_usage_status": "CONFIRMED_AS_PARTNER_OR_MENTION",
+        "notes": "FLAW: Platform partner page erroneously generated Jedox product usage"
+      }
+    ],
+    "evidence": {
+      "total_rows": 62,
+      "unique_tuples": 18,
+      "duplicate_rows": 44,
+      "duplication_rate_pct": 70.97
+    },
+    "decision_makers": {
+      "total_count": 1,
+      "persons": [
+        {
+          "name": "Anna Schell",
+          "published_title": "FP&A",
+          "role_category": "FINANCE_BUSINESS",
+          "associated_company": "Starlight Children's Foundation",
+          "notes": "Extracted from parenthetical quote signature; published title was only 'FP&A'"
+        }
+      ],
+      "missing_benchmarks": [
+        "Badrish Shriniwas (Director / Technical Author on blog)"
+      ]
+    },
+    "public_contacts": {
+      "total_count": 3,
+      "contacts": [
+        {
+          "type": "EMAIL",
+          "value": "webadmin@thirdrock.com.au",
+          "level": "COMPANY (general inbox)"
+        },
+        {
+          "type": "PHONE",
+          "value": "+61 (02) 8007 3621",
+          "level": "COMPANY (office phone)"
+        },
+        {
+          "type": "OTHER",
+          "value": "55, Pyrmont Bridge Road, Pyrmont Sydney 2009",
+          "level": "COMPANY (office address)"
+        }
+      ]
+    },
+    "discovered_documents": {
+      "total_count": 0,
+      "reason": "Site genuinely contains zero downloadable PDF/Word/Excel/PowerPoint documents"
+    }
+  }
+}

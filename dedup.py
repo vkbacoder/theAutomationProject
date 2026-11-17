@@ -7,7 +7,7 @@ stripping, and RapidFuzz token matching.
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 from rapidfuzz import fuzz
 
@@ -127,3 +127,32 @@ def infer_company_name_from_title(title: Optional[str], domain: str) -> str:
             return cleaned_domain
 
     return "Unnamed Organization"
+
+
+def canonical_contact_key(
+    contact_type: Any,
+    contact_value: str,
+    person_name: Optional[str] = None,
+    associated_company: Optional[str] = None,
+) -> str:
+    """Generate a stable deduplication key for public contact details.
+    
+    Normalizes phone numbers, emails, addresses, and URLs while preserving
+    legitimate distinctions between different people and companies.
+    """
+    ctype = (contact_type.value if hasattr(contact_type, "value") else str(contact_type)).upper()
+    val = (contact_value or "").strip().lower()
+
+    if ctype in ("PHONE", "OFFICE_PHONE"):
+        digits = re.sub(r"\D", "", val)
+        val_norm = digits[-9:] if len(digits) >= 9 else digits
+    elif ctype == "EMAIL":
+        val_norm = val
+    elif ctype == "LINKEDIN":
+        val_norm = re.sub(r"^https?://(?:www\.)?linkedin\.com/(?:in|company)/", "", val).strip("/")
+    else:  # OTHER / Address
+        val_norm = re.sub(r"[\s,.-]+", " ", val).strip()
+
+    p_norm = (person_name or "").strip().lower()
+    comp_norm = normalize_company_name(associated_company or "")
+    return f"{ctype}:{val_norm}::{p_norm}::{comp_norm}"

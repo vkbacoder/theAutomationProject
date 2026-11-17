@@ -754,6 +754,7 @@ def api_export_job_data(job_id: int, format: str = "excel"):
                 "job_id": job_id,
                 "company_name": job.company_name,
                 "target_product": job.target_product,
+                "workflow": job.workflow.value if hasattr(job.workflow, "value") else str(job.workflow),
                 "candidates": df_candidates.to_dict(orient="records"),
                 "evidence": df_evidence.to_dict(orient="records"),
                 "decision_makers": df_decision_makers.to_dict(orient="records"),

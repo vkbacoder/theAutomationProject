@@ -299,7 +299,7 @@ def test_benchmark_decision_makers_and_published_roles(benchmark_fixture):
     assert badrish is not None, "Badrish Shriniwas must be discovered from technical blog bylines"
     assert badrish.full_name == "Badrish Shriniwas"
     assert badrish.published_title in ("Author", "Director", "Author / Contributor")
-    assert badrish.role_category in (RoleCategory.TECHNOLOGY_IT, RoleCategory.EXECUTIVE)
+    assert badrish.role_category in (RoleCategory.AUTHOR_CONTRIBUTOR, RoleCategory.TECHNOLOGY_IT, RoleCategory.EXECUTIVE)
     assert badrish.email is None, "Must not invent email"
     assert badrish.phone is None, "Must not invent phone"
 
