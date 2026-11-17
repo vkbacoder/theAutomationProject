@@ -23,6 +23,7 @@ from models import (
     CandidateClassification,
     ClaimType,
     CompanyProfile,
+    ContactOwnership,
     ContactType,
     ContactVerificationStatus,
     CrawlJob,
@@ -330,6 +331,42 @@ def init_db(db_path: Optional[str] = None) -> None:
                 conn.execute("ALTER TABLE crawl_jobs ADD COLUMN objective TEXT")
             if "target_product" not in existing_cols:
                 conn.execute("ALTER TABLE crawl_jobs ADD COLUMN target_product TEXT")
+            if "research_stage" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN research_stage TEXT DEFAULT 'COMPLETED'")
+            if "internal_pages_count" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN internal_pages_count INTEGER DEFAULT 0")
+            if "external_pages_count" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN external_pages_count INTEGER DEFAULT 0")
+            if "queries_executed_count" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN queries_executed_count INTEGER DEFAULT 0")
+            if "external_urls_count" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN external_urls_count INTEGER DEFAULT 0")
+            if "duplicate_urls_count" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN duplicate_urls_count INTEGER DEFAULT 0")
+            if "invalid_entities_rejected_count" not in existing_cols:
+                conn.execute("ALTER TABLE crawl_jobs ADD COLUMN invalid_entities_rejected_count INTEGER DEFAULT 0")
+
+            # Non-destructive migration checks on crawl_pages table
+            cursor = conn.execute("PRAGMA table_info(crawl_pages)")
+            page_cols = {row["name"] for row in cursor.fetchall()}
+            if "frontier" not in page_cols:
+                conn.execute("ALTER TABLE crawl_pages ADD COLUMN frontier TEXT DEFAULT 'INTERNAL'")
+            if "source_category" not in page_cols:
+                conn.execute("ALTER TABLE crawl_pages ADD COLUMN source_category TEXT DEFAULT 'OFFICIAL_COMPANY'")
+            if "priority_score" not in page_cols:
+                conn.execute("ALTER TABLE crawl_pages ADD COLUMN priority_score REAL")
+
+            # Non-destructive migration check on public_contacts table
+            cursor = conn.execute("PRAGMA table_info(public_contacts)")
+            pc_cols = {row["name"] for row in cursor.fetchall()}
+            if "contact_ownership" not in pc_cols:
+                conn.execute("ALTER TABLE public_contacts ADD COLUMN contact_ownership TEXT DEFAULT 'TARGET_COMPANY'")
+
+            # Non-destructive migration check on decision_makers table
+            cursor = conn.execute("PRAGMA table_info(decision_makers)")
+            dm_cols = {row["name"] for row in cursor.fetchall()}
+            if "discovery_method" not in dm_cols:
+                conn.execute("ALTER TABLE decision_makers ADD COLUMN discovery_method TEXT DEFAULT 'INTERNAL_CRAWL'")
 
             # Non-destructive migration check on customer_candidates table
             cursor = conn.execute("PRAGMA table_info(customer_candidates)")
@@ -1138,14 +1175,19 @@ def save_crawled_page(page: CrawlPage, db_path: Optional[str] = None) -> CrawlPa
     conn = get_connection(db_path)
     try:
         with conn:
+            frontier_val = getattr(page, "frontier", "INTERNAL") or "INTERNAL"
+            source_cat_val = getattr(page, "source_category", "OFFICIAL_COMPANY") or "OFFICIAL_COMPANY"
+            priority_val = getattr(page, "priority_score", None)
+
             cursor = conn.execute(
                 """
                 INSERT INTO crawl_pages (
                     job_id, original_url, final_url, http_status, depth,
                     discovery_source_url, title, extracted_text, headings_json,
                     metadata_json, links_count, word_count, content_hash,
-                    status, error_message, evidence_id, retrieved_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, error_message, evidence_id, retrieved_at,
+                    frontier, source_category, priority_score
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     page.job_id,
@@ -1165,6 +1207,9 @@ def save_crawled_page(page: CrawlPage, db_path: Optional[str] = None) -> CrawlPa
                     page.error_message,
                     page.evidence_id,
                     page.retrieved_at,
+                    frontier_val,
+                    source_cat_val,
+                    priority_val,
                 ),
             )
             page.id = cursor.lastrowid
@@ -1222,6 +1267,13 @@ def _row_to_crawl_job(row: sqlite3.Row) -> CrawlJob:
 
     objective = row["objective"] if "objective" in row_keys else None
     target_product = row["target_product"] if "target_product" in row_keys else None
+    research_stage = row["research_stage"] if "research_stage" in row_keys else None
+    internal_pages_count = row["internal_pages_count"] if "internal_pages_count" in row_keys and row["internal_pages_count"] is not None else 0
+    external_pages_count = row["external_pages_count"] if "external_pages_count" in row_keys and row["external_pages_count"] is not None else 0
+    queries_executed_count = row["queries_executed_count"] if "queries_executed_count" in row_keys and row["queries_executed_count"] is not None else 0
+    external_urls_count = row["external_urls_count"] if "external_urls_count" in row_keys and row["external_urls_count"] is not None else 0
+    duplicate_urls_count = row["duplicate_urls_count"] if "duplicate_urls_count" in row_keys and row["duplicate_urls_count"] is not None else 0
+    invalid_entities_rejected_count = row["invalid_entities_rejected_count"] if "invalid_entities_rejected_count" in row_keys and row["invalid_entities_rejected_count"] is not None else 0
 
     return CrawlJob(
         id=row["id"],
@@ -1240,6 +1292,13 @@ def _row_to_crawl_job(row: sqlite3.Row) -> CrawlJob:
         pages_crawled=row["pages_crawled"],
         pages_failed=row["pages_failed"],
         discovered_urls_count=row["discovered_urls_count"],
+        research_stage=research_stage,
+        internal_pages_count=internal_pages_count,
+        external_pages_count=external_pages_count,
+        queries_executed_count=queries_executed_count,
+        external_urls_count=external_urls_count,
+        duplicate_urls_count=duplicate_urls_count,
+        invalid_entities_rejected_count=invalid_entities_rejected_count,
         created_at=row["created_at"],
         started_at=row["started_at"],
         finished_at=row["finished_at"],
@@ -1329,18 +1388,42 @@ def calculate_job_metrics(
 
         reason = stop_reason or stats.get("finish_reason") or outcome.lower()
 
+        # Frontier breakdown from crawl_pages
+        frontier_stats = c.execute(
+            """
+            SELECT 
+                SUM(CASE WHEN frontier = 'INTERNAL' OR frontier IS NULL THEN 1 ELSE 0 END) as internal_pages,
+                SUM(CASE WHEN frontier = 'EXTERNAL' THEN 1 ELSE 0 END) as external_pages
+            FROM crawl_pages WHERE job_id = ? AND status = 'SUCCESS'
+            """,
+            (job_id,),
+        ).fetchone()
+        int_pages = int(frontier_stats["internal_pages"] or 0) if frontier_stats else 0
+        ext_pages = int(frontier_stats["external_pages"] or 0) if frontier_stats else 0
+
+        ext_queries = int(job_row["queries_executed_count"] or 0) if job_row and "queries_executed_count" in job_row.keys() else 0
+        ext_urls = int(job_row["external_urls_count"] or 0) if job_row and "external_urls_count" in job_row.keys() else 0
+        dupe_total = max(dupe_filtered, int(job_row["duplicate_urls_count"] or 0) if job_row and "duplicate_urls_count" in job_row.keys() else 0)
+        invalid_entities = int(job_row["invalid_entities_rejected_count"] or 0) if job_row and "invalid_entities_rejected_count" in job_row.keys() else 0
+
         return CrawlJobMetrics(
             requests_attempted=req_attempted,
             responses_downloaded=resp_downloaded,
             unique_pages_saved=unique_pages,
             useful_pages=useful_pages,
             empty_or_thin_pages=empty_thin_pages,
-            duplicate_requests_filtered=dupe_filtered,
+            duplicate_requests_filtered=dupe_total,
             failed_requests=failed_requests,
             total_response_bytes=wire_bytes,
             total_decompressed_bytes=decompressed_bytes,
             crawl_duration_sec=round(duration_sec, 2),
             evidence_records_created=evidence_linked,
+            internal_pages_retrieved=int_pages,
+            external_queries_executed=ext_queries,
+            external_urls_discovered=ext_urls,
+            external_pages_retrieved=ext_pages,
+            duplicate_urls_filtered=dupe_total,
+            invalid_entities_rejected=invalid_entities,
             final_outcome=outcome,
             stop_reason=str(reason) if reason else None,
         )
@@ -1414,6 +1497,11 @@ def _row_to_crawl_page(row: sqlite3.Row) -> CrawlPage:
         except Exception:
             pass
 
+    row_keys = row.keys()
+    frontier_val = row["frontier"] if "frontier" in row_keys and row["frontier"] else "INTERNAL"
+    source_cat_val = row["source_category"] if "source_category" in row_keys and row["source_category"] else "OFFICIAL_COMPANY"
+    priority_val = row["priority_score"] if "priority_score" in row_keys else None
+
     return CrawlPage(
         id=row["id"],
         job_id=row["job_id"],
@@ -1433,6 +1521,9 @@ def _row_to_crawl_page(row: sqlite3.Row) -> CrawlPage:
         error_message=row["error_message"],
         evidence_id=row["evidence_id"],
         retrieved_at=row["retrieved_at"],
+        frontier=frontier_val,
+        source_category=source_cat_val,
+        priority_score=priority_val,
     )
 
 
@@ -1823,6 +1914,7 @@ def save_decision_maker(
             norm_name = dm.normalized_name or normalize_company_name(dm.name)
             role_val = dm.role_category.value if hasattr(dm.role_category, "value") else str(dm.role_category)
 
+            disc_method = getattr(dm, "discovery_method", "INTERNAL_CRAWL") or "INTERNAL_CRAWL"
             if dm.id:
                 conn.execute(
                     """
@@ -1832,7 +1924,7 @@ def save_decision_maker(
                         department = ?, role_category = ?, associated_company = ?,
                         professional_relevance = ?, email = ?, phone = ?, linkedin_url = ?,
                         source_url = ?, source_type = ?, supporting_quote = ?,
-                        verification_status = ?, updated_at = ?
+                        verification_status = ?, updated_at = ?, discovery_method = ?
                     WHERE id = ?
                     """,
                     (
@@ -1855,6 +1947,7 @@ def save_decision_maker(
                         dm.supporting_quote,
                         dm.verification_status,
                         dm.updated_at,
+                        disc_method,
                         dm.id,
                     ),
                 )
@@ -1866,8 +1959,8 @@ def save_decision_maker(
                         name, normalized_name, title, department, role_category,
                         associated_company, professional_relevance, email, phone,
                         linkedin_url, source_url, source_type, supporting_quote,
-                        verification_status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        verification_status, created_at, updated_at, discovery_method
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         dm.job_id,
@@ -1890,6 +1983,7 @@ def save_decision_maker(
                         dm.verification_status,
                         dm.created_at,
                         dm.updated_at,
+                        disc_method,
                     ),
                 )
                 dm.id = cursor.lastrowid
@@ -1945,6 +2039,9 @@ def get_decision_makers(
         conn.close()
 
 
+get_decision_makers_for_job = get_decision_makers
+
+
 def get_decision_maker_by_id(
     dm_id: int, db_path: Optional[str] = None
 ) -> Optional[DecisionMaker]:
@@ -1987,6 +2084,7 @@ def _row_to_decision_maker(row: sqlite3.Row) -> DecisionMaker:
         source_type=row["source_type"] if "source_type" in row.keys() else "HTML",
         supporting_quote=row["supporting_quote"] if "supporting_quote" in row.keys() else None,
         verification_status=row["verification_status"] if "verification_status" in row.keys() else "UNVERIFIED",
+        discovery_method=row["discovery_method"] if "discovery_method" in row.keys() and row["discovery_method"] else "INTERNAL_CRAWL",
         created_at=row["created_at"],
         updated_at=row["updated_at"] if "updated_at" in row.keys() else None,
     )
@@ -2022,6 +2120,12 @@ def save_public_contact(
                         contact.id = er[0]
                         break
 
+            own_val = getattr(contact, "contact_ownership", "TARGET_COMPANY")
+            if hasattr(own_val, "value"):
+                own_val = own_val.value
+            else:
+                own_val = str(own_val or "TARGET_COMPANY")
+
             if contact.id:
                 conn.execute(
                     """
@@ -2030,7 +2134,7 @@ def save_public_contact(
                         contact_type = ?, contact_value = ?, associated_person_name = ?,
                         associated_job_title = ?, associated_company = ?, source_url = ?,
                         source_type = ?, file_name = ?, supporting_quote = ?, source_location = ?,
-                        verification_status = ?, is_public = ?, updated_at = ?
+                        verification_status = ?, is_public = ?, updated_at = ?, contact_ownership = ?
                     WHERE id = ?
                     """,
                     (
@@ -2051,6 +2155,7 @@ def save_public_contact(
                         vstatus_val,
                         1 if contact.is_public else 0,
                         contact.updated_at,
+                        own_val,
                         contact.id,
                     ),
                 )
@@ -2062,8 +2167,8 @@ def save_public_contact(
                         contact_type, contact_value, associated_person_name,
                         associated_job_title, associated_company, source_url,
                         source_type, file_name, supporting_quote, source_location,
-                        verification_status, is_public, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        verification_status, is_public, created_at, updated_at, contact_ownership
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         contact.job_id,
@@ -2084,6 +2189,7 @@ def save_public_contact(
                         1 if contact.is_public else 0,
                         contact.created_at,
                         contact.updated_at,
+                        own_val,
                     ),
                 )
                 contact.id = cursor.lastrowid
@@ -2163,6 +2269,13 @@ def get_public_contact_by_id(
 
 
 def _row_to_public_contact(row: sqlite3.Row) -> PublicContact:
+    own_val = ContactOwnership.TARGET_COMPANY
+    if "contact_ownership" in row.keys() and row["contact_ownership"]:
+        try:
+            own_val = ContactOwnership(row["contact_ownership"])
+        except Exception:
+            pass
+
     return PublicContact(
         id=row["id"],
         job_id=row["job_id"],
@@ -2179,6 +2292,7 @@ def _row_to_public_contact(row: sqlite3.Row) -> PublicContact:
         file_name=row["file_name"],
         supporting_quote=row["supporting_quote"] or "",
         source_location=row["source_location"],
+        contact_ownership=own_val,
         verification_status=ContactVerificationStatus(row["verification_status"]),
         is_public=bool(row["is_public"]),
         created_at=row["created_at"],

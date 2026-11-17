@@ -243,6 +243,22 @@
           <span class="crawl-stat-value" id="metric-evidence-linked">-</span>
           <span class="crawl-stat-label">Evidence Linked</span>
         </div>
+        <div class="crawl-stat-box highlight-success">
+          <span class="crawl-stat-value" id="metric-internal-pages">-</span>
+          <span class="crawl-stat-label">Internal Pages</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-external-queries">-</span>
+          <span class="crawl-stat-label">External Queries</span>
+        </div>
+        <div class="crawl-stat-box highlight-primary">
+          <span class="crawl-stat-value" id="metric-external-pages">-</span>
+          <span class="crawl-stat-label">External Pages</span>
+        </div>
+        <div class="crawl-stat-box">
+          <span class="crawl-stat-value" id="metric-invalid-entities">-</span>
+          <span class="crawl-stat-label">Invalid Rejected</span>
+        </div>
         <div class="crawl-stat-box">
           <span class="crawl-stat-value" id="metric-stop-reason" style="font-size: 0.95rem; text-transform: uppercase;">-</span>
           <span class="crawl-stat-label">Stop Reason</span>
@@ -502,12 +518,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th style="width: 18%;">Full Name</th>
+                  <th style="width: 17%;">Full Name</th>
                   <th style="width: 20%;">Published Job Title</th>
-                  <th style="width: 14%;">Role Category</th>
-                  <th style="width: 16%;">Associated Company</th>
-                  <th style="width: 18%;">Professional Relevance</th>
-                  <th style="width: 14%;">Source Citation</th>
+                  <th style="width: 13%;">Role Category</th>
+                  <th style="width: 15%;">Associated Company</th>
+                  <th style="width: 15%;">Discovery Method</th>
+                  <th style="width: 20%;">Source Citation</th>
                 </tr>
               </thead>
               <tbody id="tbody-decision-makers">
@@ -538,16 +554,17 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th style="width: 14%;">Contact Type</th>
-                  <th style="width: 24%;">Contact Detail / Value</th>
-                  <th style="width: 16%;">Person Name</th>
-                  <th style="width: 16%;">Associated Company</th>
-                  <th style="width: 14%;">Verification</th>
-                  <th style="width: 16%;">Source / Quote</th>
+                  <th style="width: 12%;">Contact Type</th>
+                  <th style="width: 20%;">Contact Detail / Value</th>
+                  <th style="width: 14%;">Ownership</th>
+                  <th style="width: 14%;">Person Name</th>
+                  <th style="width: 14%;">Associated Company</th>
+                  <th style="width: 12%;">Verification</th>
+                  <th style="width: 14%;">Source / Quote</th>
                 </tr>
               </thead>
               <tbody id="tbody-public-contacts">
-                <tr><td colspan="6" class="empty-state">No public professional contacts extracted yet.</td></tr>
+                <tr><td colspan="7" class="empty-state">No public professional contacts extracted yet.</td></tr>
               </tbody>
             </table>
           </div>
@@ -680,18 +697,19 @@
             <table class="data-table" id="workspace-table">
               <thead>
                 <tr>
-                  <th style="width: 7%;">Depth</th>
-                  <th style="width: 38%;">Page Title &amp; Source URL</th>
-                  <th style="width: 10%;">HTTP Status</th>
-                  <th style="width: 10%;">Extraction</th>
-                  <th style="width: 10%;">Word Count</th>
-                  <th style="width: 10%;">Evidence ID</th>
-                  <th style="width: 15%; text-align: center;">Action</th>
+                  <th style="width: 6%;">Depth</th>
+                  <th style="width: 10%;">Frontier</th>
+                  <th style="width: 32%;">Page Title &amp; Source URL</th>
+                  <th style="width: 9%;">Priority</th>
+                  <th style="width: 9%;">HTTP Status</th>
+                  <th style="width: 9%;">Extraction</th>
+                  <th style="width: 9%;">Word Count</th>
+                  <th style="width: 16%; text-align: center;">Action</th>
                 </tr>
               </thead>
               <tbody id="workspace-tbody">
                 <tr>
-                  <td colspan="7" class="empty-state">No research data available yet. Start research above to populate this workspace.</td>
+                  <td colspan="8" class="empty-state">No research data available yet. Start research above to populate this workspace.</td>
                 </tr>
               </tbody>
             </table>

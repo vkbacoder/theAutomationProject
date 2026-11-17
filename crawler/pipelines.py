@@ -138,6 +138,9 @@ class DatabasePipeline:
             error_message=item.get("error_message"),
             evidence_id=evidence_id,
             retrieved_at=item.get("retrieved_at"),
+            frontier=item.get("frontier", "INTERNAL"),
+            source_category=item.get("source_category", "OFFICIAL_COMPANY"),
+            priority_score=item.get("priority_score"),
         )
 
         try:

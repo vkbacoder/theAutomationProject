@@ -63,6 +63,18 @@ FALSE_POSITIVE_TERMS: Set[str] = {
     "key differenciators", "satisfaction guarantee", "analytics & planning", "reporting & analytics",
     "planning & consolidation", "financial planning & consolidation", "cloud analytics modernization",
     "reporting", "analytics", "planning", "data science acceleration", "full life cycle support",
+    "mission statement", "environmental policy", "fleet forms", "fleet form",
+    "4wd & off", "4wd & off-road", "off-road", "off road", "road",
+    "we have", "we are", "they have", "you have", "i have",
+    "code of conduct", "modern slavery statement", "whistleblower policy",
+    "corporate governance", "annual report", "financial report", "board charter",
+    "trading policy", "continuous disclosure", "shareholder communication",
+    "dividend reinvestment", "safety policy", "workplace health and safety",
+    "equal opportunity", "supplier code of conduct", "sustainability policy",
+    "tax governance", "workplace gender equality", "investor presentation",
+    "conditions of sale", "conditions of sale terms", "terms & conditions",
+    "passenger", "commercial", "agricultural", "industrial",
+    "tyre and wheel distribution", "wheel distribution", "tyre distribution",
 }
 
 # Ordinals, adverbs, and generic narrative starters to reject from candidate extraction
@@ -78,6 +90,21 @@ TRAILING_FRAGMENT_WORDS: Set[str] = {
     "be", "been", "that", "this", "which", "who", "whom", "whose", "di",
     "our", "your", "my", "their", "its", "not", "no", "yes", "all", "more",
     "so", "than", "if", "out", "every",
+    "have", "had", "has", "do", "did", "does", "can", "could", "will", "would",
+    "shall", "should", "may", "might", "must", "off", "up", "down", "over", "under", "again",
+}
+
+COMMON_GENERIC_NOUNS: Set[str] = {
+    "road", "roads", "tyre", "tyres", "tire", "tires", "wheel", "wheels",
+    "form", "forms", "fleet", "fleets", "page", "pages", "item", "items",
+    "data", "system", "systems", "team", "teams", "work", "works",
+    "policy", "policies", "statement", "statements", "report", "reports",
+    "mission", "charter", "code", "conduct", "governance", "review",
+    "overview", "profile", "profiles", "detail", "details", "summary",
+    "intro", "introduction", "case", "cases", "client", "clients",
+    "customer", "customers", "partner", "partners", "service", "services",
+    "solution", "solutions", "product", "products", "software", "hardware",
+    "user", "users", "member", "members", "group", "groups", "australia",
 }
 
 # Regex to detect case study or customer headings
@@ -166,8 +193,11 @@ def clean_candidate_name(raw_name: str) -> Optional[str]:
     name = re.sub(r"^[\"\'\s\-—–:,\.!?]+|[\"\'\s\-—–:,\.!?]+$", "", name).strip()
     
     # Strip common prefixes or suffixes
-    name = re.sub(r"(?i)\s+(?:logo|client logo|customer logo)$", "", name).strip()
+    name = re.sub(r"(?i)\s+(?:logo|client logo|customer logo|case study|customer story|success story|client story)$", "", name).strip()
     name = re.sub(r"(?i)^(?:logo of|the|a|an)\s+", "", name).strip()
+
+    # Strip trailing action clauses from title fragments: e.g. "Company Transforms FP&A" -> "Company"
+    name = re.sub(r"(?i)\s+(?:transforms|transformed|selected|deployed|implements|implemented|powers|delivers|accelerates|modernizes)\b.*$", "", name).strip()
 
     if len(name) < 2 or len(name) > 60:
         return None
@@ -190,6 +220,18 @@ def clean_candidate_name(raw_name: str) -> Optional[str]:
     if words[-1].lower() in TRAILING_FRAGMENT_WORDS or words[0].lower() in TRAILING_FRAGMENT_WORDS:
         return None
 
+    # Reject pronoun starters (unless full legal corporate name)
+    if words[0].lower() in {"we", "our", "us", "they", "them", "their", "you", "your", "he", "she", "it", "its"}:
+        if not re.search(r"\b(?:GmbH|LLC|Inc\.?|Corp\.?|Ltd\.?|Limited|Pty\.?\s*Ltd\.?)\b", name, re.IGNORECASE):
+            return None
+
+    # Reject single-word common nouns / fragments
+    if len(words) == 1:
+        if lowered in COMMON_GENERIC_NOUNS or lowered in FALSE_POSITIVE_TERMS:
+            return None
+        if len(name) < 3 or not name[0].isupper():
+            return None
+
     # Must contain at least one alphabetic character and start with uppercase or digit
     if not any(c.isalpha() for c in name):
         return None
@@ -199,8 +241,64 @@ def clean_candidate_name(raw_name: str) -> Optional[str]:
     return name
 
 
-def is_self_reference(candidate_name: str, target_company_name: Optional[str], target_domain: Optional[str]) -> bool:
-    """Check if the candidate name is simply the target company itself."""
+def is_invalid_entity_candidate(candidate_name: str) -> bool:
+    """Check if candidate string is an invalid heading fragment, common UI term, or noun fragment."""
+    if not candidate_name:
+        return True
+    cleaned = clean_candidate_name(candidate_name)
+    if not cleaned:
+        return True
+    lowered = cleaned.lower()
+    if lowered in FALSE_POSITIVE_TERMS or lowered in COMMON_GENERIC_NOUNS:
+        return True
+    words = lowered.split()
+    if words and (words[0] in ADVERBS_AND_ORDINALS or words[0] in TRAILING_FRAGMENT_WORDS or words[-1] in TRAILING_FRAGMENT_WORDS):
+        return True
+    if words and words[0] in {"we", "our", "us", "they", "them", "their", "you", "your", "he", "she", "it", "its"}:
+        if not re.search(r"\b(?:GmbH|LLC|Inc\.?|Corp\.?|Ltd\.?|Limited|Pty\.?\s*Ltd\.?)\b", candidate_name, re.IGNORECASE):
+            return True
+    return False
+
+
+def verify_candidate_entity(
+    candidate_name: str,
+    source_text: str = "",
+    context: str = "",
+) -> Tuple[bool, Optional[str]]:
+    """Verify whether a candidate entity name is valid or an invalid fragment/policy heading."""
+    if is_invalid_entity_candidate(candidate_name):
+        return False, "Candidate name matches invalid heading fragment, policy title, or common noun."
+    cleaned = clean_candidate_name(candidate_name)
+    return True, cleaned
+
+
+def is_partner_page(text: str, page_url: str = "") -> bool:
+    """Check if a page is a dedicated partner/alliance directory or statement, avoiding casual mentions."""
+    low_url = (page_url or "").lower()
+    low_text = (text or "").lower()
+    url_match = any(p in low_url for p in ("/partner", "/partners", "/alliances", "partner-"))
+    text_match = bool(re.search(r"\b(?:our\s+partners|formal\s+partner|technology\s+partners|partner\s+directory|certified\s+technology\s+partners)\b", low_text))
+    return url_match or text_match
+
+
+def is_self_reference(
+    candidate_name: str,
+    target_company_name: Optional[str],
+    target_domain: Optional[str],
+    page_url: Optional[str] = None,
+) -> bool:
+    """Check if the candidate name is simply the target company itself.
+    
+    CRITICAL: On an EXTERNAL page (e.g. jedox.com), discovering target_company_name
+    is NOT a self-reference to filter out; it is the customer being proven!
+    """
+    if page_url and target_domain:
+        page_netloc = urlparse(page_url).netloc.lower()
+        norm_t_domain = normalize_domain(target_domain)
+        # If this is an external domain (e.g. jedox.com != ntaw.com.au), finding target_company_name is desired evidence!
+        if norm_t_domain and page_netloc and norm_t_domain not in page_netloc and not page_netloc.endswith("." + norm_t_domain):
+            return False
+
     norm_cand = normalize_company_name(candidate_name)
     cand_compact = re.sub(r"[^a-z0-9]", "", candidate_name.lower())
 
@@ -211,6 +309,11 @@ def is_self_reference(candidate_name: str, target_company_name: Optional[str], t
             return True
         if target_compact and (target_compact in cand_compact or cand_compact in target_compact):
             return True
+        # Check acronym match: e.g. "ntaw" == initials of "National Tyre & Wheel"
+        words = [w for w in re.split(r"\s+", candidate_name) if w and w[0].isalnum()]
+        cand_acronym = "".join(w[0] for w in words).lower()
+        if target_compact and (cand_acronym == target_compact or target_compact == cand_acronym):
+            return True
         if "3rdrock" in cand_compact or "thirdrock" in cand_compact:
             return True
 
@@ -218,6 +321,11 @@ def is_self_reference(candidate_name: str, target_company_name: Optional[str], t
         # Extract main domain stem
         domain_stem = target_domain.split(".")[0].lower().replace("www", "")
         if len(domain_stem) > 2 and (domain_stem in norm_cand.replace(" ", "") or domain_stem in cand_compact):
+            return True
+        # Domain stem acronym match (e.g. domain stem 'ntaw' matching initials of 'National Tyre & Wheel')
+        words = [w for w in re.split(r"\s+", candidate_name) if w and w[0].isalnum()]
+        cand_acronym = "".join(w[0] for w in words).lower()
+        if len(cand_acronym) >= 3 and cand_acronym == domain_stem:
             return True
 
     return False
@@ -229,12 +337,14 @@ def extract_candidates_from_text_block(
     page_title: Optional[str],
     target_company_name: Optional[str] = None,
     target_product: str = "Jedox",
+    target_company_domain: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Extract candidate company mentions and supporting context from plain text."""
     results: List[Dict[str, Any]] = []
     if not text:
         return results
 
+    t_dom = target_company_domain
     text = normalize_unicode_punctuation(text)
     if page_title:
         page_title = normalize_unicode_punctuation(page_title)
@@ -246,7 +356,7 @@ def extract_candidates_from_text_block(
         m_title = RE_TITLE_CASE_STUDY.search(page_title)
         if m_title:
             t_cand = clean_candidate_name(m_title.group(1))
-            if t_cand and not is_self_reference(t_cand, target_company_name, urlparse(page_url).netloc):
+            if t_cand and not is_self_reference(t_cand, target_company_name, t_dom, page_url=page_url):
                 results.append({
                     "candidate_name": t_cand,
                     "relationship_claim": "CASE_STUDY",
@@ -261,11 +371,11 @@ def extract_candidates_from_text_block(
             parts = re.split(r"\s*[|\-—–]\s*", page_title)
             for part in parts:
                 cleaned_part = clean_candidate_name(part)
-                if cleaned_part and not is_self_reference(cleaned_part, target_company_name, urlparse(page_url).netloc):
+                if cleaned_part and not is_self_reference(cleaned_part, target_company_name, t_dom, page_url=page_url):
                     low_url = page_url.lower()
                     low_text = text.lower()
-                    is_partner_page = "partner" in low_url or "partner" in low_text
-                    is_case_study = any(kw in low_url for kw in ("case-stud", "starlight", "ball-and-doggett", "steadfast", "customer", "story", "stories")) or any(kw in low_text for kw in ("customer profile", "client profile", "case study", "customer story", "prior to the implementation"))
+                    is_partner_page = any(p in low_url for p in ("/partner", "/partners", "/alliances", "partner-")) or bool(re.search(r"\b(?:our\s+partners|formal\s+partner|technology\s+partners)\b", low_text))
+                    is_case_study = any(kw in low_url for kw in ("case-stud", "starlight", "ball-and-doggett", "steadfast", "customer", "story", "stories", "/customers/")) or any(kw in low_text for kw in ("customer profile", "client profile", "case study", "customer story", "prior to the implementation"))
 
                     if is_partner_page:
                         results.append({
@@ -294,7 +404,7 @@ def extract_candidates_from_text_block(
     )
     if m_profile:
         p_cand = clean_candidate_name(m_profile.group(1))
-        if p_cand and not is_self_reference(p_cand, target_company_name, urlparse(page_url).netloc):
+        if p_cand and not is_self_reference(p_cand, target_company_name, t_dom, page_url=page_url):
             p_snippet = text[m_profile.start():m_profile.start() + 350].replace("\n", " ").strip()
             results.append({
                 "candidate_name": p_cand,
@@ -305,15 +415,15 @@ def extract_candidates_from_text_block(
                 "page_title": page_title,
             })
 
-    # Check Partner statements e.g. "3rd Rock is a dedicated Jedox Partner"
+    # Check Partner statements e.g. "3rd Rock is a dedicated Jedox Partner" or "official Microsoft Partner"
     m_partner_stmt = re.search(
-        r"\b(?:is\s+a\s+(?:dedicated|certified|authorized|premier|gold|silver|strategic)?\s*([A-Za-z0-9&.' -]{2,30}?)\s+(?:Partner|Reseller|Alliance))\b",
+        r"\b(?:is\s+an?\s+(?:dedicated|certified|authorized|official|premier|gold|silver|strategic)?\s*([A-Za-z0-9&.' -]{2,30}?)\s+(?:Partner|Reseller|Alliance))\b",
         text,
         re.IGNORECASE,
     )
     if m_partner_stmt:
         part_cand = clean_candidate_name(m_partner_stmt.group(1))
-        if part_cand and not is_self_reference(part_cand, target_company_name, urlparse(page_url).netloc):
+        if part_cand and not is_self_reference(part_cand, target_company_name, t_dom, page_url=page_url):
             p_start = max(0, m_partner_stmt.start() - 40)
             p_end = min(len(text), m_partner_stmt.end() + 100)
             results.append({
@@ -333,7 +443,7 @@ def extract_candidates_from_text_block(
     )
     if m_prior:
         prior_cand = clean_candidate_name(m_prior.group(1))
-        if prior_cand and not is_self_reference(prior_cand, target_company_name, urlparse(page_url).netloc):
+        if prior_cand and not is_self_reference(prior_cand, target_company_name, t_dom, page_url=page_url):
             pr_start = max(0, m_prior.start() - 20)
             pr_end = min(len(text), m_prior.end() + 200)
             results.append({
@@ -352,7 +462,7 @@ def extract_candidates_from_text_block(
     )
     if m_eng:
         eng_cand = clean_candidate_name(m_eng.group(1))
-        if eng_cand and not is_self_reference(eng_cand, target_company_name, urlparse(page_url).netloc):
+        if eng_cand and not is_self_reference(eng_cand, target_company_name, t_dom, page_url=page_url):
             e_start = max(0, m_eng.start() - 30)
             e_end = min(len(text), m_eng.end() + 200)
             results.append({
@@ -360,6 +470,26 @@ def extract_candidates_from_text_block(
                 "relationship_claim": "CUSTOMER",
                 "product_claim": f"Mentioned with {target_product}" if target_product.lower() in text[e_start:e_end].lower() else None,
                 "supporting_text": text[e_start:e_end].replace("\n", " ").strip()[:350],
+                "page_url": page_url,
+                "page_title": page_title,
+            })
+
+    # Check explicit selection of target product (e.g. "X selected Jedox for..." or "X (NTAW), leading company, selected and deployed Jedox for...")
+    m_sel = re.search(
+        r"\b([A-Z0-9][A-Za-z0-9&.,' -]{2,50}?)(?:\s*\([^)]*\))?(?:,\s*[^,]{2,80}?,)?\s+(?:selected|chose|uses|relies on|deployed|implemented)(?:\s+and\s+(?:deployed|implemented|selected))?\s+([A-Za-z0-9&.' -]+?)\s+(?:for|to|as)\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_sel:
+        sel_cand = clean_candidate_name(m_sel.group(1))
+        if sel_cand and not is_self_reference(sel_cand, target_company_name, t_dom, page_url=page_url):
+            s_start = max(0, m_sel.start() - 20)
+            s_end = min(len(text), m_sel.end() + 200)
+            results.append({
+                "candidate_name": sel_cand,
+                "relationship_claim": "CUSTOMER",
+                "product_claim": f"Selected {m_sel.group(2).strip()}",
+                "supporting_text": text[s_start:s_end].replace("\n", " ").strip()[:350],
                 "page_url": page_url,
                 "page_title": page_title,
             })
@@ -433,7 +563,7 @@ def extract_candidates_from_text_block(
         if not cand_name:
             for m_corp in RE_CORP_SUFFIX.finditer(line):
                 corp_cand = clean_candidate_name(m_corp.group(1))
-                if corp_cand and not is_self_reference(corp_cand, target_company_name, urlparse(page_url).netloc):
+                if corp_cand and not is_self_reference(corp_cand, target_company_name, t_dom, page_url=page_url):
                     cand_name = corp_cand
                     rel_claim = "MENTION"
                     break
@@ -443,7 +573,7 @@ def extract_candidates_from_text_block(
         if target_product.lower() in line.lower():
             prod_claim = f"Mentioned with {target_product}"
 
-        if cand_name and not is_self_reference(cand_name, target_company_name, urlparse(page_url).netloc):
+        if cand_name and not is_self_reference(cand_name, target_company_name, t_dom, page_url=page_url):
             results.append({
                 "candidate_name": cand_name,
                 "relationship_claim": rel_claim,
@@ -485,7 +615,7 @@ def extract_candidates_from_html(
         elif "logo" in alt.lower() and len(alt.split()) <= 4:
             cand_name = clean_candidate_name(re.sub(r"(?i)\s*logo\s*", "", alt))
 
-        if cand_name and not is_self_reference(cand_name, target_company_name, target_domain):
+        if cand_name and not is_self_reference(cand_name, target_company_name, target_domain, page_url=page_url):
             results.append({
                 "candidate_name": cand_name,
                 "relationship_claim": "CUSTOMER_LOGO",
@@ -518,7 +648,7 @@ def extract_candidates_from_html(
                         m_heading = RE_CASE_STUDY_HEADING.search(first_line)
                         if m_heading:
                             cand_name = clean_candidate_name(m_heading.group(1))
-                            if cand_name and not is_self_reference(cand_name, target_company_name, target_domain):
+                            if cand_name and not is_self_reference(cand_name, target_company_name, target_domain, page_url=page_url):
                                 results.append({
                                     "candidate_name": cand_name,
                                     "relationship_claim": "CASE_STUDY",
@@ -564,7 +694,7 @@ def check_explicit_relationship(
     if is_known_tech:
         # Check if there is explicit corporate partner evidence for this specific entity
         # Only corporate partners (e.g. Microsoft corporate partnership on partner page) qualify
-        if cand_lower == "microsoft":
+        if cand_lower == "microsoft" or cand_lower.startswith("microsoft"):
             for text in all_snippets:
                 t_low = text.lower()
                 if any(p_term in t_low for p_term in ("microsoft partner", "partner-microsoft", "microsoft solutions | 3rd rock", "official microsoft partner")):
@@ -882,6 +1012,7 @@ def verify_all_candidates_for_job(
             target_product = m_obj.group(1).capitalize()
 
     target_company_name = job.company_name
+    target_company_domain = getattr(job, "company_domain", None) or normalize_domain(job.seed_url)
     is_crawl_complete = job.status not in (database.CrawlJobStatus.FAILED, database.CrawlJobStatus.CANCELLED)
 
     # 1. Fetch all crawled pages and discovered documents for this job
@@ -925,14 +1056,14 @@ def verify_all_candidates_for_job(
                     for heading_text in tag_list:
                         raw_extractions.extend(
                             extract_candidates_from_text_block(
-                                heading_text, p_url, p_title, target_company_name, target_product
+                                heading_text, p_url, p_title, target_company_name, target_product, target_company_domain=target_company_domain
                             )
                         )
 
         # Extract from page text
         raw_extractions.extend(
             extract_candidates_from_text_block(
-                p_text, p_url, p_title, target_company_name, target_product
+                p_text, p_url, p_title, target_company_name, target_product, target_company_domain=target_company_domain
             )
         )
 
@@ -941,7 +1072,7 @@ def verify_all_candidates_for_job(
         if doc.extracted_text and doc.extracted_text.strip():
             raw_extractions.extend(
                 extract_candidates_from_text_block(
-                    doc.extracted_text, doc.document_url, doc.file_name, target_company_name, target_product
+                    doc.extracted_text, doc.document_url, doc.file_name, target_company_name, target_product, target_company_domain=target_company_domain
                 )
             )
 
@@ -987,7 +1118,7 @@ def verify_all_candidates_for_job(
             ):
                 existing_sources.append(ref)
             curr_name = candidates_by_name[matched_key]["candidate_name"]
-            if len(name) > len(curr_name) and not is_self_reference(name, target_company_name, urlparse(item["page_url"]).netloc):
+            if len(name) > len(curr_name) and not is_self_reference(name, target_company_name, target_company_domain, page_url=item["page_url"]):
                 candidates_by_name[matched_key]["candidate_name"] = name
         else:
             candidates_by_name[norm] = {

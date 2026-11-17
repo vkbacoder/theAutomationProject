@@ -24,6 +24,7 @@ from models import (
     CandidateCategory,
     CandidateClassification,
     ClaimType,
+    ContactOwnership,
     ContactType,
     ContactVerificationStatus,
     DecisionMaker,
@@ -80,9 +81,9 @@ RE_NAME_TITLE_PATTERNS = [
     re.compile(
         r"(?:^|[—–\-\n])\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*\(\s*([^)\n]+?)\s*\)",
     ),
-    # "John Doe, CFO" or "John Doe, Chief Technology Officer"
+    # "John Doe, CFO" or "Jason Lamb, Chief Financial Officer at National Tyre & Wheel"
     re.compile(
-        r"\b([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*(?:,\s*|—\s*|–\s*|-\s*|\s+is\s+the\s+)([A-Z][A-Za-z0-9&/,\. ]{2,45}?)(?=[.,;\n\)]|$)",
+        r"\b([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*(?:,\s*|—\s*|–\s*|-\s*|\s+is\s+the\s+)([A-Z][A-Za-z0-9&/,\. ]{2,80}?)(?=[.,;:\n\)\"\'“”]|\s*[:—–-]|\s+(?:says|states|commented|explained|added|noted)|$)",
     ),
     # "CFO John Doe" or "Chief Financial Officer Jane Smith"
     re.compile(
@@ -202,17 +203,22 @@ def extract_decision_makers_from_text(
     target_product: str = "Jedox",
     job_id: Optional[int] = None,
     default_company: Optional[str] = None,
+    target_company: Optional[str] = None,
 ) -> List[DecisionMaker]:
     """Scan text for professional decision-makers and their published titles."""
     discovered: List[DecisionMaker] = []
     if not text:
         return discovered
 
-    company_to_use = associated_company or default_company
+    company_to_use = associated_company or target_company or default_company
     seen_names: Set[str] = set()
     lines = [l.strip() for l in text.split("\n") if l.strip()]
+    search_lines = list(lines)
+    for i in range(len(lines) - 1):
+        # Also check adjacent line pairs to capture Name on line i and Title on line i+1 (standard HTML markup)
+        search_lines.append(f"{lines[i]} {lines[i+1]}")
 
-    for line in lines:
+    for line in search_lines:
         for pattern in RE_NAME_TITLE_PATTERNS:
             for match in pattern.finditer(line):
                 groups = match.groups()
@@ -341,6 +347,47 @@ def extract_decision_makers_from_text(
 # Public Professional Contact Extraction
 # -------------------------------------------------------------
 
+def classify_contact_ownership(
+    quote: str = "",
+    context: str = "",
+    source_url: str = "",
+    default_company: Optional[str] = None,
+    contact_type: Optional[str] = None,
+    contact_value: Optional[str] = None,
+    context_text: Optional[str] = None,
+    page_url: Optional[str] = None,
+    target_company: Optional[str] = None,
+    target_domain: Optional[str] = None,
+) -> Tuple[ContactOwnership, Optional[str]]:
+    """Determine ownership provenance for extracted contacts (Target Company vs 3rd Party vs Regulator)."""
+    q_val = quote or contact_value or ""
+    ctx_val = context or context_text or ""
+    src_val = source_url or page_url or ""
+    comp_val = default_company or target_company or ""
+
+    q_low = q_val.lower()
+    combined = f"{q_val} {ctx_val} {src_val}".lower()
+
+    # Prioritize specific third-party mentions directly in the quote or contact value over surrounding context
+    if "autoguru" in q_low or (contact_value and "autoguru" in contact_value.lower()):
+        return ContactOwnership.THIRD_PARTY, "AutoGuru"
+    if "oaic" in q_low or (contact_value and "oaic.gov.au" in contact_value.lower()) or "privacy commissioner" in q_low:
+        return ContactOwnership.REGULATOR, "OAIC"
+
+    # 1. Statutory / Government Regulators (OAIC, ASIC, etc.)
+    if any(k in combined for k in ("oaic", "australian information commissioner", "privacy commissioner", "asic", "ombudsman", "accc")):
+        return ContactOwnership.REGULATOR, "OAIC"
+
+    # 2. Third-Party Partners, Portals, and Providers (AutoGuru, Fleet Partners, etc.)
+    if any(k in combined for k in ("autoguru", "fleet plus", "fleet choice", "external partner", "supplier code", "fleet company")):
+        if "autoguru" in combined:
+            return ContactOwnership.THIRD_PARTY, "AutoGuru"
+        return ContactOwnership.THIRD_PARTY, "Third Party Fleet Partner"
+
+    # 3. Default to Target Company
+    return ContactOwnership.TARGET_COMPANY, comp_val
+
+
 def extract_public_contacts_from_text(
     text: str,
     source_url: str,
@@ -380,6 +427,7 @@ def extract_public_contacts_from_text(
         start = max(0, match.start() - 50)
         end = min(len(text), match.end() + 50)
         quote = text[start:end].replace("\n", " ").strip()
+        ownership, comp_name = classify_contact_ownership(quote, text[max(0, match.start()-80):min(len(text), match.end()+80)], source_url, associated_company)
 
         # Classify general company contact vs named employee
         is_general_inbox = any(
@@ -394,12 +442,13 @@ def extract_public_contacts_from_text(
                 contact_type=ContactType.EMAIL,
                 contact_value=email_clean,
                 job_title=j_title,
-                associated_company=associated_company,
+                associated_company=comp_name,
                 source_url=source_url,
                 source_type=resolved_source_type,
                 file_name=file_name,
                 supporting_quote=quote,
                 source_location=source_location,
+                contact_ownership=ownership,
                 verification_status=ContactVerificationStatus.VERIFIED_PUBLIC,
                 is_public=True,
             )
@@ -416,18 +465,20 @@ def extract_public_contacts_from_text(
         start = max(0, match.start() - 50)
         end = min(len(text), match.end() + 50)
         quote = text[start:end].replace("\n", " ").strip()
+        ownership, comp_name = classify_contact_ownership(quote, text[max(0, match.start()-80):min(len(text), match.end()+80)], source_url, associated_company)
 
         contacts.append(
             PublicContact(
                 job_id=job_id or 0,
                 contact_type=ContactType.LINKEDIN,
                 contact_value=full_url,
-                associated_company=associated_company,
+                associated_company=comp_name,
                 source_url=source_url,
                 source_type=resolved_source_type,
                 file_name=file_name,
                 supporting_quote=quote,
                 source_location=source_location,
+                contact_ownership=ownership,
                 verification_status=ContactVerificationStatus.VERIFIED_PUBLIC,
                 is_public=True,
             )
@@ -454,6 +505,7 @@ def extract_public_contacts_from_text(
         if any(term in context for term in ("tel", "phone", "call", "fax", "contact", "+", "office", "mobile")):
             seen_values.add(raw_phone)
             quote = text[start:end].replace("\n", " ").strip()
+            ownership, comp_name = classify_contact_ownership(quote, context, source_url, associated_company)
             ctype = ContactType.OFFICE_PHONE if "office" in context else ContactType.PHONE
 
             contacts.append(
@@ -462,12 +514,13 @@ def extract_public_contacts_from_text(
                     contact_type=ctype,
                     contact_value=raw_phone,
                     job_title="Company Phone",
-                    associated_company=associated_company,
+                    associated_company=comp_name,
                     source_url=source_url,
                     source_type=resolved_source_type,
                     file_name=file_name,
                     supporting_quote=quote,
                     source_location=source_location,
+                    contact_ownership=ownership,
                     verification_status=ContactVerificationStatus.VERIFIED_PUBLIC,
                     is_public=True,
                 )
@@ -486,18 +539,20 @@ def extract_public_contacts_from_text(
             start = max(0, m_addr.start() - 30)
             end = min(len(text), m_addr.end() + 30)
             quote = text[start:end].replace("\n", " ").strip()
+            ownership, comp_name = classify_contact_ownership(quote, text[max(0, m_addr.start()-80):min(len(text), m_addr.end()+80)], source_url, associated_company)
             contacts.append(
                 PublicContact(
                     job_id=job_id or 0,
                     contact_type=ContactType.OTHER,
                     contact_value=addr_clean,
                     job_title="Company Address",
-                    associated_company=associated_company,
+                    associated_company=comp_name,
                     source_url=source_url,
                     source_type=resolved_source_type,
                     file_name=file_name,
                     supporting_quote=quote,
                     source_location=source_location,
+                    contact_ownership=ownership,
                     verification_status=ContactVerificationStatus.VERIFIED_PUBLIC,
                     is_public=True,
                 )

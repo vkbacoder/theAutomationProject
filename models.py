@@ -74,6 +74,14 @@ class ContactType(str, Enum):
     OTHER = "OTHER"
 
 
+class ContactOwnership(str, Enum):
+    """Ownership provenance of an extracted contact detail."""
+    TARGET_COMPANY = "TARGET_COMPANY"
+    THIRD_PARTY = "THIRD_PARTY"
+    REGULATOR = "REGULATOR"
+    UNKNOWN = "UNKNOWN"
+
+
 class ContactVerificationStatus(str, Enum):
     """Verification classification for public contacts."""
     VERIFIED_PUBLIC = "VERIFIED_PUBLIC"
@@ -169,6 +177,7 @@ class DecisionMaker(BaseModel):
     source_type: str = "HTML"
     supporting_quote: Optional[str] = None
     verification_status: str = "UNVERIFIED"
+    discovery_method: str = "INTERNAL_CRAWL"
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -342,6 +351,12 @@ class CrawlJobMetrics(BaseModel):
     total_decompressed_bytes: Optional[int] = Field(default=0, description="Total decompressed response bytes")
     crawl_duration_sec: Optional[float] = Field(default=0.0, description="Total crawl duration in seconds")
     evidence_records_created: int = Field(default=0, description="Evidence records created and linked")
+    internal_pages_retrieved: int = Field(default=0, description="Internal pages retrieved and parsed")
+    external_queries_executed: int = Field(default=0, description="External search queries executed")
+    external_urls_discovered: int = Field(default=0, description="External URLs discovered via search")
+    external_pages_retrieved: int = Field(default=0, description="External authority pages retrieved")
+    duplicate_urls_filtered: int = Field(default=0, description="Duplicate URLs filtered across frontiers")
+    invalid_entities_rejected: int = Field(default=0, description="Heading fragments and invalid entities rejected")
     final_outcome: str = Field(default="COMPLETED", description="Final job status: COMPLETED, CANCELLED, or FAILED")
     stop_reason: Optional[str] = Field(default=None, description="Engine stop reason (e.g. finished, max_pages_reached, cancelled)")
 
@@ -364,6 +379,13 @@ class CrawlJob(BaseModel):
     pages_crawled: int = 0
     pages_failed: int = 0
     discovered_urls_count: int = 0
+    research_stage: Optional[str] = None
+    internal_pages_count: int = 0
+    external_pages_count: int = 0
+    queries_executed_count: int = 0
+    external_urls_count: int = 0
+    duplicate_urls_count: int = 0
+    invalid_entities_rejected_count: int = 0
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -391,6 +413,9 @@ class CrawlPage(BaseModel):
     links_count: int = 0
     word_count: int = 0
     content_hash: Optional[str] = None
+    frontier: str = "INTERNAL"
+    source_category: str = "OFFICIAL_COMPANY"
+    priority_score: Optional[float] = None
     status: CrawlPageStatus = CrawlPageStatus.SUCCESS
     error_message: Optional[str] = None
     evidence_id: Optional[int] = None
@@ -540,6 +565,7 @@ class PublicContact(BaseModel):
     file_name: Optional[str] = None
     supporting_quote: str = ""
     source_location: Optional[str] = None
+    contact_ownership: ContactOwnership = ContactOwnership.TARGET_COMPANY
     verification_status: ContactVerificationStatus = ContactVerificationStatus.UNVERIFIED
     is_public: bool = True
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

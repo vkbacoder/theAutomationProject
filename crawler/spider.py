@@ -30,6 +30,7 @@ from document_parser import (
     RESOURCE_EXTENSIONS,
     parse_document_content,
 )
+from research_scoring import compute_url_priority
 from scraper import parse_html_data, clean_text
 
 logger = logging.getLogger(__name__)
@@ -253,6 +254,9 @@ class RecursiveLeadSpider(scrapy.Spider):
             status="SUCCESS",
             error_message=None,
             retrieved_at=now_str,
+            priority_score=response.meta.get("priority_score"),
+            frontier="INTERNAL",
+            source_category="OFFICIAL_COMPANY",
         )
         yield item
 
@@ -278,21 +282,19 @@ class RecursiveLeadSpider(scrapy.Spider):
                     self.discovered_urls.add(norm_link)
                     discovered_batch_count += 1
 
-                # Prioritize links likely to contain customer references, case studies, or stories
-                lower_link = norm_link.lower()
-                lower_text = (link_item.text or "").lower()
-                customer_kw = (
-                    "customer", "client", "case-stud", "case_stud", "success-stor",
-                    "success_stor", "reference", "testimonial", "portfolio", "stories",
-                    "our-work", "our_work", "users", "report", "brochure", "whitepaper",
+                # Compute Best-First Priority Score (0–100) using 4-component weighted model
+                c_name = getattr(self, "company_name", None)
+                score_res = compute_url_priority(
+                    url=norm_link,
+                    link_text=link_item.text,
+                    discovery_depth=current_depth + 1,
+                    discovery_source=response.url,
+                    workflow=self.workflow,
+                    target_product=self.target_product,
+                    company_name=c_name,
+                    objective=self.objective,
                 )
-                link_priority = 0
-                if self.target_product and self.target_product.lower() in lower_link:
-                    link_priority = 25
-                elif any(k in lower_link or k in lower_text for k in customer_kw):
-                    link_priority = 10
-                elif any(k in lower_link for k in ("partner", "alliance", "solutions")):
-                    link_priority = 5
+                link_priority = int(score_res.priority_score)
 
                 # Route documents & media to parse_document
                 link_path = urlparse(norm_link).path.lower()
@@ -309,6 +311,7 @@ class RecursiveLeadSpider(scrapy.Spider):
                             "discovery_source_url": response.url,
                             "original_url": norm_link,
                             "is_document": True,
+                            "priority_score": score_res.priority_score,
                         },
                         dont_filter=False,
                     )
@@ -322,6 +325,7 @@ class RecursiveLeadSpider(scrapy.Spider):
                             "depth": current_depth + 1,
                             "discovery_source_url": response.url,
                             "original_url": norm_link,
+                            "priority_score": score_res.priority_score,
                         },
                         dont_filter=False,
                     )

@@ -90,13 +90,20 @@ def run_job(job_id: int, db_path: str | None = None) -> int:
             db_path=db_path,
         )
 
-        # Run Customer Candidate Discovery and Verification on all crawled pages
+        # Run Intelligent Search-Guided Research Controller (External Frontier + Iterative Expansion + Shared Verification)
         try:
-            from candidate_verifier import verify_all_candidates_for_job
-            verified = verify_all_candidates_for_job(job_id, db_path=db_path)
-            logger.info("Candidate verification completed for Job #%d: %d candidates found.", job_id, len(verified))
+            from research_controller import ResearchController
+            controller = ResearchController(job_id=job_id, db_path=db_path)
+            res_metrics = controller.execute_research_cycle()
+            logger.info("Search-guided research cycle completed for Job #%d: %s", job_id, res_metrics)
         except Exception as e:
-            logger.error("Candidate verification failed for Job #%d: %s", job_id, e)
+            logger.error("Research Controller cycle encountered error for Job #%d: %s. Falling back to candidate verification.", job_id, e)
+            try:
+                from candidate_verifier import verify_all_candidates_for_job
+                verified = verify_all_candidates_for_job(job_id, db_path=db_path)
+                logger.info("Fallback candidate verification completed for Job #%d: %d candidates found.", job_id, len(verified))
+            except Exception as ve:
+                logger.error("Fallback candidate verification failed for Job #%d: %s", job_id, ve)
 
         return 0
 

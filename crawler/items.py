@@ -21,6 +21,9 @@ class CrawledPageItem(scrapy.Item):
     status = scrapy.Field()
     error_message = scrapy.Field()
     retrieved_at = scrapy.Field()
+    priority_score = scrapy.Field()
+    frontier = scrapy.Field()
+    source_category = scrapy.Field()
 
 
 class DiscoveredDocumentItem(scrapy.Item):

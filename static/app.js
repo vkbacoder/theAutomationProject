@@ -586,7 +586,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const job = await resp.json();
       currentJobData = job;
       displayCrawlJobHeader(job);
-      return (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED");
+      return (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED" || job.status === "LEAD_QUALIFIED" || job.status === "RESEARCH_INCOMPLETE");
     } catch (err) {
       console.warn("Poll job details error:", err);
       if (jobLastUpdated) jobLastUpdated.textContent = "Reconnecting...";
@@ -626,6 +626,9 @@ document.addEventListener("DOMContentLoaded", () => {
         headings_json: p.headings_json || { h1: [], h2: [], h3: [] },
         metadata_json: p.metadata_json || {},
         error_message: p.error_message || null,
+        frontier: p.frontier || "INTERNAL",
+        source_category: p.source_category || "OFFICIAL_COMPANY",
+        priority_score: p.priority_score !== undefined && p.priority_score !== null ? p.priority_score : null,
         source_mode: "crawl",
         raw_record: p
       }));
@@ -655,11 +658,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Explicit Status Badge
     if (jobStatusBadge) {
       const s = (job.status || "PENDING").toUpperCase();
-      if (s === "COMPLETED") {
-        jobStatusBadge.textContent = "COMPLETED";
+      const stage = (job.research_stage || "").toUpperCase();
+      if (s === "COMPLETED" || s === "LEAD_QUALIFIED") {
+        jobStatusBadge.textContent = s === "LEAD_QUALIFIED" ? "LEAD QUALIFIED" : "COMPLETED";
         jobStatusBadge.className = "badge badge-completed";
+      } else if (s === "RESEARCH_INCOMPLETE") {
+        jobStatusBadge.textContent = "RESEARCH INCOMPLETE";
+        jobStatusBadge.className = "badge badge-warning";
       } else if (s === "RUNNING") {
-        jobStatusBadge.textContent = "RUNNING";
+        jobStatusBadge.textContent = stage ? `RUNNING (${stage})` : "RUNNING";
         jobStatusBadge.className = "badge badge-running";
       } else if (s === "FAILED") {
         jobStatusBadge.textContent = "FAILED";
@@ -668,7 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
         jobStatusBadge.textContent = "CANCELLED";
         jobStatusBadge.className = "badge badge-cancelled";
       } else {
-        jobStatusBadge.textContent = "QUEUED / PENDING";
+        jobStatusBadge.textContent = stage ? `${s} (${stage})` : s;
         jobStatusBadge.className = "badge badge-pending";
       }
     }
@@ -727,11 +734,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Outcome Message Banner
     if (jobOutcomeBanner) {
       const reason = (job.metrics && job.metrics.stop_reason) ? job.metrics.stop_reason : "";
-      if (job.status === "COMPLETED") {
+      if (job.status === "LEAD_QUALIFIED") {
+        jobOutcomeBanner.className = "job-outcome-banner banner-success";
+        if (jobOutcomeIcon) jobOutcomeIcon.textContent = "🎯";
+        if (jobOutcomeTitle) jobOutcomeTitle.textContent = "Lead Successfully Qualified";
+        if (jobOutcomeMessage) jobOutcomeMessage.textContent = `Target verified: ${crawled} page(s) analyzed across internal & external frontiers. Evidence and decision-makers qualified below.`;
+        jobOutcomeBanner.classList.remove("hidden");
+      } else if (job.status === "COMPLETED") {
         jobOutcomeBanner.className = "job-outcome-banner banner-success";
         if (jobOutcomeIcon) jobOutcomeIcon.textContent = "✅";
         if (jobOutcomeTitle) jobOutcomeTitle.textContent = "Crawl Finished Successfully";
         if (jobOutcomeMessage) jobOutcomeMessage.textContent = `Ingested ${crawled} page(s). Stop reason: ${reason || "Reached configured limits"}. Research findings verified below.`;
+        jobOutcomeBanner.classList.remove("hidden");
+      } else if (job.status === "RESEARCH_INCOMPLETE") {
+        jobOutcomeBanner.className = "job-outcome-banner banner-warning";
+        if (jobOutcomeIcon) jobOutcomeIcon.textContent = "⚠️";
+        if (jobOutcomeTitle) jobOutcomeTitle.textContent = "Research Incomplete";
+        if (jobOutcomeMessage) jobOutcomeMessage.textContent = reason || "Budget or limits reached before all objectives could be verified.";
         jobOutcomeBanner.classList.remove("hidden");
       } else if (job.status === "FAILED") {
         jobOutcomeBanner.className = "job-outcome-banner banner-danger";
@@ -751,14 +770,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Button states
-    if (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED") {
+    const isDone = (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED" || job.status === "LEAD_QUALIFIED" || job.status === "RESEARCH_INCOMPLETE");
+    if (isDone) {
       setLoading(false);
     }
     if (btnCancelCrawl) {
-      btnCancelCrawl.disabled = (job.status === "COMPLETED" || job.status === "CANCELLED" || job.status === "FAILED");
+      btnCancelCrawl.disabled = isDone;
     }
     if (btnRetryCrawl) {
-      if (job.status === "FAILED" || (job.pages_failed > 0 && job.status === "COMPLETED")) {
+      if (job.status === "FAILED" || (job.pages_failed > 0 && isDone)) {
         btnRetryCrawl.classList.remove("hidden");
       } else {
         btnRetryCrawl.classList.add("hidden");
@@ -837,6 +857,15 @@ document.addEventListener("DOMContentLoaded", () => {
     metricDuration.textContent = m.crawl_duration_sec ? `${m.crawl_duration_sec.toFixed(1)}s` : "-";
     metricEvidenceLinked.textContent = (m.evidence_records_created || 0).toLocaleString();
     metricStopReason.textContent = m.stop_reason || "Not available";
+
+    const elIntPages = document.getElementById("metric-internal-pages");
+    if (elIntPages) elIntPages.textContent = (m.internal_pages_retrieved || 0).toLocaleString();
+    const elExtQueries = document.getElementById("metric-external-queries");
+    if (elExtQueries) elExtQueries.textContent = (m.external_queries_executed || 0).toLocaleString();
+    const elExtPages = document.getElementById("metric-external-pages");
+    if (elExtPages) elExtPages.textContent = (m.external_pages_retrieved || 0).toLocaleString();
+    const elInvEnt = document.getElementById("metric-invalid-entities");
+    if (elInvEnt) elInvEnt.textContent = (m.invalid_entities_rejected || 0).toLocaleString();
   }
 
   // ------------------------------------------
@@ -1046,7 +1075,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (records.length === 0) {
       workspaceTbody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-state">
+          <td colspan="8" class="empty-state">
             ${workspaceRecords.length === 0 
               ? "No research data available yet. Start research above to populate this workspace." 
               : "No pages match the active search or filter criteria."}
@@ -1066,7 +1095,15 @@ document.addEventListener("DOMContentLoaded", () => {
       tdDepth.style.fontWeight = "600";
       tdDepth.textContent = `d:${page.depth}`;
 
-      // Col 2: Title & Source URL
+      // Col 2: Frontier
+      const tdFrontier = document.createElement("td");
+      const fBadge = document.createElement("span");
+      const isExt = page.frontier === "EXTERNAL";
+      fBadge.className = isExt ? "badge badge-partial" : "badge badge-confirmed";
+      fBadge.textContent = page.frontier || "INTERNAL";
+      tdFrontier.appendChild(fBadge);
+
+      // Col 3: Title & Source URL
       const tdTitle = document.createElement("td");
       const titleDiv = document.createElement("div");
       titleDiv.style.fontWeight = "600";
@@ -1086,7 +1123,20 @@ document.addEventListener("DOMContentLoaded", () => {
       tdTitle.appendChild(titleDiv);
       tdTitle.appendChild(urlLink);
 
-      // Col 3: HTTP Status
+      // Col 4: Priority Score
+      const tdPriority = document.createElement("td");
+      tdPriority.style.fontFamily = "var(--font-code)";
+      tdPriority.style.fontWeight = "600";
+      if (page.priority_score !== null && page.priority_score !== undefined) {
+        const score = Number(page.priority_score);
+        tdPriority.textContent = score.toFixed(1);
+        tdPriority.style.color = score >= 60 ? "var(--accent-success)" : (score >= 35 ? "var(--accent-warning)" : "var(--text-muted)");
+      } else {
+        tdPriority.textContent = "-";
+        tdPriority.style.color = "var(--text-muted)";
+      }
+
+      // Col 5: HTTP Status
       const tdHttp = document.createElement("td");
       const httpBadge = document.createElement("span");
       const statusCode = page.http_status;
@@ -1100,7 +1150,7 @@ document.addEventListener("DOMContentLoaded", () => {
       httpBadge.textContent = statusCode ? `HTTP ${statusCode}` : "ERR";
       tdHttp.appendChild(httpBadge);
 
-      // Col 4: Extraction Status
+      // Col 6: Extraction Status
       const tdExt = document.createElement("td");
       const extBadge = document.createElement("span");
       const isExtSuccess = page.extraction_status === "SUCCESS";
@@ -1108,26 +1158,12 @@ document.addEventListener("DOMContentLoaded", () => {
       extBadge.textContent = page.extraction_status || "UNKNOWN";
       tdExt.appendChild(extBadge);
 
-      // Col 5: Word Count
+      // Col 7: Word Count
       const tdWords = document.createElement("td");
       tdWords.style.fontFamily = "var(--font-code)";
       tdWords.textContent = `${(page.word_count || 0).toLocaleString()} w`;
 
-      // Col 6: Linked Evidence
-      const tdEvidence = document.createElement("td");
-      if (page.evidence_id) {
-        const evTag = document.createElement("span");
-        evTag.className = "badge badge-evidence";
-        evTag.textContent = `#${page.evidence_id}`;
-        evTag.title = "Verified ScrapeEvidence linked";
-        tdEvidence.appendChild(evTag);
-      } else {
-        tdEvidence.style.color = "var(--text-muted)";
-        tdEvidence.style.fontSize = "0.82rem";
-        tdEvidence.textContent = "None";
-      }
-
-      // Col 7: Action (Inspect)
+      // Col 8: Action (Inspect)
       const tdAction = document.createElement("td");
       tdAction.style.textAlign = "center";
       const btnInspect = document.createElement("button");
@@ -1139,11 +1175,12 @@ document.addEventListener("DOMContentLoaded", () => {
       tdAction.appendChild(btnInspect);
 
       tr.appendChild(tdDepth);
+      tr.appendChild(tdFrontier);
       tr.appendChild(tdTitle);
+      tr.appendChild(tdPriority);
       tr.appendChild(tdHttp);
       tr.appendChild(tdExt);
       tr.appendChild(tdWords);
-      tr.appendChild(tdEvidence);
       tr.appendChild(tdAction);
 
       workspaceTbody.appendChild(tr);
@@ -1731,7 +1768,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${escapeHtml(dm.published_title || dm.title || "-")}</td>
         <td><span class="badge badge-category">${escapeHtml(dm.role_category || "OTHER")}</span></td>
         <td><strong>${escapeHtml(dm.associated_company || "Target Company")}</strong></td>
-        <td style="font-size:0.83rem; color:var(--text-muted);">${escapeHtml(dm.professional_relevance || "-")}</td>
+        <td><span class="badge badge-category" style="font-size:0.75rem;">${escapeHtml(dm.discovery_method || "REGEX_INFERENCE")}</span></td>
         <td>
           <a href="${escapeHtml(dm.source_url)}" target="_blank" rel="noopener" class="table-link">${escapeHtml(dm.source_url)}</a>
           ${dm.supporting_quote ? `<div class="intel-quote-block">“${escapeHtml(dm.supporting_quote)}”</div>` : ""}
@@ -1757,14 +1794,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No public professional contacts found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No public professional contacts found.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = filtered.map(c => `
+    tbody.innerHTML = filtered.map(c => {
+      let ownerBadge = "badge-confirmed";
+      if (c.contact_ownership === "THIRD_PARTY") ownerBadge = "badge-partial";
+      else if (c.contact_ownership === "REGULATOR") ownerBadge = "badge-category";
+      else if (c.contact_ownership === "UNKNOWN") ownerBadge = "badge-unverified";
+
+      return `
       <tr>
         <td><span class="badge badge-category">${escapeHtml(c.contact_type)}</span></td>
         <td><code style="color:#a5b4fc; font-weight:600;">${escapeHtml(c.contact_value)}</code></td>
+        <td><span class="badge ${ownerBadge}">${escapeHtml(c.contact_ownership || "TARGET_COMPANY")}</span></td>
         <td>${escapeHtml(c.person_name || c.associated_person_name || "-")}</td>
         <td><strong>${escapeHtml(c.associated_company || "-")}</strong></td>
         <td><span class="badge badge-verified-public">${escapeHtml(c.verification_status || "VERIFIED_PUBLIC")}</span></td>
@@ -1773,7 +1817,8 @@ document.addEventListener("DOMContentLoaded", () => {
           ${c.supporting_quote ? `<div class="intel-quote-block">“${escapeHtml(c.supporting_quote)}”</div>` : ""}
         </td>
       </tr>
-    `).join("");
+      `;
+    }).join("");
   }
 
   function renderDocumentsTable() {
